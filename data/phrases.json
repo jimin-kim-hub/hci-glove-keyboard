@@ -1,0 +1,56 @@
+{
+  "_note": "SAMPLE for the demo. Phrases recalled from the MacKenzie & Soukoreff (2003) set; verify each against the official phrases2.txt and regenerate with analysis/make_sets.py (seeded) before the pilot.",
+  "source": "MacKenzie, I. S., & Soukoreff, R. W. (2003). Phrase sets for evaluating text entry techniques. CHI EA 2003. https://doi.org/10.1145/765891.765971",
+  "seed": 20261103,
+  "filter": "lowercase, 20-40 chars",
+  "practice": [
+    "breathing is difficult",
+    "do not squander your time",
+    "you are not a jedi yet",
+    "we are having spaghetti",
+    "elephants are afraid of mice",
+    "did you have a good time"
+  ],
+  "sets": [
+    [
+      "a problem with the engine",
+      "please provide your date of birth",
+      "great disturbance in the force",
+      "popularity is desired by all",
+      "you are a wonderful example",
+      "beware the ides of march",
+      "the sun rises in the east",
+      "the force is with you"
+    ],
+    [
+      "watch out for low flying objects",
+      "one heck of a question",
+      "the world is a stage",
+      "we run the risk of failure",
+      "the music is better than it sounds",
+      "he is just like everyone else",
+      "three two one zero blast off",
+      "yes you are very smart"
+    ],
+    [
+      "the dreamers of dreams",
+      "starlight and dewdrop",
+      "are you talking to me",
+      "physics and chemistry are hard",
+      "elections bring out the best",
+      "you must be getting old",
+      "my favorite subject is psychology",
+      "neither a borrower nor a lender be"
+    ],
+    [
+      "my bank account is overdrawn",
+      "can i skate with sister today",
+      "my watch fell in the water",
+      "do not drink too much",
+      "space is a high priority",
+      "question that must be answered",
+      "double double toil and trouble",
+      "the facts get in the way"
+    ]
+  ]
+}

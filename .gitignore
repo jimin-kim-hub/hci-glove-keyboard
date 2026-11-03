@@ -1,0 +1,8 @@
+# Public repo: only the web app, tests and README (공개 저장소: 웹앱·테스트·README만)
+*.pdf
+CLAUDE.md
+docs/
+.claude/
+.DS_Store
+__pycache__/
+*.pyc
