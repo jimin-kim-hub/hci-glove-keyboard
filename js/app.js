@@ -1,5 +1,5 @@
 // app.js — state, input pipeline, screen switching (화면 전환·상태 관리)
-import { CONDITIONS, LATIN_SQUARE, SIM_PRESETS, SETTINGS_KEY } from './config.js';
+import { CONDITIONS, LATIN_SQUARE, SIM_PRESETS, SETTINGS_KEY, APP_VERSION } from './config.js';
 import { Keyboard } from './keyboard.js';
 import { Logger } from './logger.js';
 import { decodeBaseline, decodeCalibrated } from './decoder.js';
@@ -161,6 +161,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) logge
 
 (async function boot() {
   await logger.init();
+  document.querySelector('.ver').textContent = `v${APP_VERSION}`; // shows which build is running (캐시 확인용)
   logger.startSession({ pid: settings.pid, cond: settings.cond, mode: settings.mode, simSeed, sim: settings.sim });
   updateBadges();
   ctx.go(new URLSearchParams(location.search).get('screen') || 'participant');
