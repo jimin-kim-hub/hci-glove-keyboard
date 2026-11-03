@@ -2,7 +2,7 @@
 // All geometry is in "key units" (u): 1 u = horizontal key pitch (키 간격).
 // Rendering and decoding both read from here, so they can never disagree.
 
-export const APP_VERSION = '0.2.0';
+export const APP_VERSION = '0.3.0';
 
 // --- Key geometry (키 기하) -------------------------------------------------
 export const GEOM = {

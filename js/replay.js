@@ -46,10 +46,10 @@ export function evaluateRun(taps) {
 
 export function createReplayScreen(ctx) {
   const el = document.createElement('section');
-  el.className = 'screen';
+  el.className = 'screen page';
   el.innerHTML = `
-    <h2>실제 탭 재생 <small>offline replay</small></h2>
-    <p class="hint">폰에서 보정(43탭)을 하고 <b>설정·로그 → 로그 내보내기</b>로 받은 JSONL 파일을 불러오세요.
+    <h1>실제 탭 재생</h1>
+    <p class="muted">폰에서 보정(43탭)을 하고 내보낸 기록(JSONL) 파일을 불러오세요.
       각 탭은 <b>그 탭을 뺀 나머지로 학습한 모델</b>(LOO)로 판정하므로 정답 누수가 없습니다.</p>
     <div class="row">
       <label class="file-btn">JSONL 불러오기<input type="file" accept=".jsonl,.json,.txt" data-r="file" hidden></label>
@@ -112,7 +112,8 @@ export function createReplayScreen(ctx) {
 
   return {
     el,
-    show() { ctx.kb.setTarget(null); if (runs.length) show(+$('runs').value); else ctx.kb.setOverlay(null); },
+    show() { document.body.classList.add('kb-on'); ctx.kb.setTarget(null); if (runs.length) show(+$('runs').value); else ctx.kb.setOverlay(null); },
+    hide() { document.body.classList.remove('kb-on'); },
     onTap() { /* keyboard is display-only here */ },
   };
 }
