@@ -8,8 +8,7 @@ export function createSettingsScreen(ctx) {
   el.innerHTML = `
     <h2>설정 · 로그</h2>
     <div class="form">
-      <label>참가자 ID <input data-r="pid" maxlength="8" placeholder="P01"></label>
-      <div class="muted small" data-r="order"></div>
+      <div class="muted" data-r="who"></div>
       <label>조건
         <select data-r="cond">${Object.keys(CONDITIONS).map(c => `<option value="${c}">${c}</option>`).join('')}</select>
       </label>
@@ -32,24 +31,24 @@ export function createSettingsScreen(ctx) {
     <h3>로그</h3>
     <div class="muted" data-r="logInfo"></div>
     <div class="row">
-      <button class="primary" data-r="export">로그 내보내기 (JSONL)</button>
-      <button data-r="clearLog" class="danger">로그 지우기</button>
-      <button data-r="clearModels" class="danger">보정 모델 모두 지우기</button>
+      <button class="primary" data-r="export">전체 로그 내보내기 (JSONL)</button>
+      <button data-r="clearModels" class="danger">현재 참가자 보정 모델 지우기</button>
+      <button data-r="clearLog" class="danger">이 기기 로그 모두 지우기</button>
     </div>
     <h3>화면 기하</h3>
     <div class="muted small" data-r="geom"></div>`;
   const $ = n => el.querySelector(`[data-r="${n}"]`);
 
   function sync() {
-    $('pid').value = s.pid; $('cond').value = s.cond; $('mode').value = s.mode;
+    $('cond').value = s.cond; $('mode').value = s.mode;
     $('blind').checked = s.blind; $('xIs').value = s.xIs; $('showExp').checked = s.showExp;
     $('simBox').hidden = s.mode !== 'sim';
     el.querySelectorAll('[data-s]').forEach(inp => { inp.value = s.sim[inp.dataset.s]; });
     el.querySelectorAll('[data-v]').forEach(sp => { sp.textContent = (+s.sim[sp.dataset.v]).toFixed(2); });
     const order = ctx.latinOrder();
-    $('order').textContent = order ? `라틴 방격 순서: ${order.split('').join(' → ')} (그룹 ${(ctx.pnum() - 1) % 4 + 1})` : 'P01 형식이면 조건 순서를 자동으로 보여 줍니다.';
+    $('who').textContent = `현재 참가자 ${ctx.participantLabel()}` + (order ? ` · 순서 ${order.split('').join(' → ')}` : '') + ' (참가자 탭에서 변경)';
     const n = ctx.logger.events.length;
-    $('logInfo').textContent = `이벤트 ${n}개 · 이 브라우저(localStorage)에 자동 저장됨 · 보정 모델: ${Object.keys(ctx.models).join(', ') || '없음'}`;
+    $('logInfo').textContent = `이벤트 ${n}개 · ${ctx.logger.storageLabel} · ${s.pid} 보정 모델: ${Object.keys(ctx.models[s.pid] ?? {}).join(', ') || '없음'}`;
     const u = ctx.kb.unitPx;
     document.body.classList.toggle('sim-mode', s.mode === 'sim');
     $('geom').textContent = `키 폭 ${(GEOM.keyW * u).toFixed(1)}px · 키 높이 ${(GEOM.keyH * u).toFixed(1)}px · 키 간격 ${u.toFixed(1)}px (CSS px). 실제 mm는 폰에서 자로 재서 기록하세요. 화면 ${window.innerWidth}×${window.innerHeight}, DPR ${window.devicePixelRatio}.`;
@@ -61,7 +60,6 @@ export function createSettingsScreen(ctx) {
     sync();
   }
 
-  $('pid').onchange = () => { s.pid = $('pid').value.trim().toUpperCase() || 'P00'; changed('pid'); };
   $('cond').onchange = () => { s.cond = $('cond').value; changed('cond'); };
   $('mode').onchange = () => { s.mode = $('mode').value; changed('mode'); };
   $('blind').onchange = () => { s.blind = $('blind').checked; changed('blind'); };
@@ -72,9 +70,9 @@ export function createSettingsScreen(ctx) {
     inp.onchange = () => changed('sim');
   });
   $('simReset').onclick = () => { s.sim = { ...SIM_PRESETS.glove }; changed('sim'); };
-  $('export').onclick = () => { ctx.logger.save(); ctx.logger.export(s.pid); };
-  $('clearLog').onclick = () => { if (confirm('이 기기의 로그를 모두 지울까요? 먼저 내보내기를 권합니다.')) { ctx.logger.clear(); sync(); } };
-  $('clearModels').onclick = () => { if (confirm('모든 조건의 보정 모델을 지울까요?')) { for (const k of Object.keys(ctx.models)) delete ctx.models[k]; ctx.saveModels(); sync(); } };
+  $('export').onclick = async () => { await ctx.logger.flush(); ctx.logger.export(); };
+  $('clearLog').onclick = async () => { if (confirm('이 기기의 모든 참가자 로그를 지울까요? 되돌릴 수 없습니다. 먼저 전체 내보내기를 하세요.')) { await ctx.logger.clear(); sync(); } };
+  $('clearModels').onclick = () => { if (confirm(`${s.pid}의 보정 모델을 모두 지울까요? (로그는 남습니다)`)) { delete ctx.models[s.pid]; ctx.saveModels(); sync(); } };
 
   document.body.classList.toggle('sim-mode', s.mode === 'sim');
   return { el, show() { ctx.kb.setTarget(null); ctx.kb.setOverlay(null); sync(); } };

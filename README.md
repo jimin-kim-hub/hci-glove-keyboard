@@ -28,17 +28,28 @@ python3 -m http.server 8137
 node --test tests/*.test.js
 ```
 
-판정 기하, 이웃 키 표, M0/M1 학습, LOO 선택·폴백, 이상치 제거, WPM/MSD, 그리고 합성 장갑 오프셋에서 보정이 오류를 줄이는지 보는 시뮬레이션 테스트를 포함한다.
+판정 기하, 이웃 키 표, 로그 병합·참가자 종합, M0/M1 학습, LOO 선택·폴백, 이상치 제거, WPM/MSD, 그리고 합성 장갑 오프셋에서 보정이 오류를 줄이는지 보는 시뮬레이션 테스트를 포함한다.
 
 ## 화면
 
 | 탭 | 내용 |
 |---|---|
+| 참가자 | 참가자 번호(+선택 별명)로 시작 → 라틴 방격 순서대로 조건 진행 상황, 전체 참가자 종합표, 다른 기기 로그 합치기 |
 | 비교 데모 | 같은 터치를 기본 판정과 보정 판정으로 나란히 표시 ("같은 터치, 다른 판정") |
 | 보정 | 팬그램 43탭 가이드 탭 → M0/M1 학습, LOO 선택, 모델 고정, 탭 점·오프셋 화살표 시각화 |
 | 따라 쓰기 | 문구 제시 → 입력 → Next. 실험자용 실시간 지표(WPM, 이웃 키 오류율, MSD 등) |
 | 실제 탭 재생 | 내보낸 JSONL의 보정 탭을 불러와 기본 vs 보정(LOO) 정확도 비교 |
-| 설정·로그 | 참가자 ID, 조건 A–D, 입력 모드, 합성 오프셋 슬라이더, X/Y 블라인드 라벨, 로그 내보내기 |
+| 설정·로그 | 조건 A–D 수동 변경, 입력 모드, 합성 오프셋 슬라이더, X/Y 블라인드 라벨, 로그 내보내기 |
+
+## 참가자 데이터 모으기
+
+- 참가자는 **번호(P01–P99)** 로 구분한다. 번호가 조건 순서(`ABDC / BCAD / CDBA / DACB`)와 문장 세트 `S[(k+p) mod 4]`를 정한다.
+- **별명**은 진행 편의용으로 이 기기 화면에만 보이고, 로그·내보내기 파일에는 **번호만** 남는다(익명화). 실명은 쓰지 않는다. 번호↔사람 대응표가 필요하면 종이로 따로 관리한다.
+- 보정 모델은 **참가자 × 조건별**로 따로 저장된다.
+- 로그는 브라우저 IndexedDB에 쌓인다. 한 폰으로 모든 참가자를 진행하면 그 폰의 참가자 화면에서 바로 종합된다.
+- 여러 폰을 쓰면 각 폰에서 **전체 로그 내보내기** → 한 기기의 **다른 기기 로그 합치기**로 불러온다. 같은 이벤트(세션 id + 순번)는 한 번만 들어간다.
+- 브라우저가 저장소를 지울 수 있으므로 **세션이 끝날 때마다 내보내기**로 백업한다.
+- P00은 데모·연습용이라 종합에서 빠진다.
 
 ## 구조
 
@@ -51,7 +62,9 @@ js/metrics.js      WPM, MSD, 이웃 키 오류 (화면 확인용)
 js/simulate.js     합성 장갑 오프셋 (시드 고정 가능)
 js/keyboard.js     렌더링 + touchstart 좌표 변환
 js/calibration.js, demo.js, trial.js, replay.js, settings.js   화면
-js/logger.js       JSONL 로그 (localStorage 백업 + 다운로드)
+js/logger.js       JSONL 로그 (IndexedDB 저장, 병합, 다운로드)
+js/aggregate.js    참가자 × 조건 종합, 중복 제거
+js/participants.js 참가자 화면
 js/viz.js          탭 점·화살표·오프셋 필드
 data/phrases.json  문구 샘플 (공식 세트로 교체 예정)
 tests/             Node 내장 테스트 러너
@@ -59,12 +72,12 @@ tests/             Node 내장 테스트 러너
 
 ## 로그 (JSON Lines)
 
-주요 이벤트: `session_start`, `layout`(키 사각형 px), `calib_tap`, `model_fit`, `touch`(두 판정 결과 `keyBase`/`keyCal`과 실제 반영 `keyShown`/`applied`, 의도 키 `intended`), `trial_end`, `settings`.
+주요 이벤트: `session_start`, `participant_start`, `layout`(키 사각형 px), `calib_tap`, `model_fit`, `touch`(두 판정 결과 `keyBase`/`keyCal`과 실제 반영 `keyShown`/`applied`, 의도 키 `intended`), `trial_end`, `settings`.
 좌표는 키보드 기준 CSS px(`x`, `y`)와 키 단위(`ux`, `uy`, 1 = 가로 키 간격)를 함께 저장한다. 지표는 분석 스크립트가 원본에서 다시 계산한다.
 
 ## 아직 안 된 것
 
-- 간이 설문(NASA-TLX, 불편도), SUS, 조건 순서 자동 진행(라틴 방격 순서는 표시만 함)
+- 간이 설문(NASA-TLX, 불편도), SUS
 - 실제 폰·장갑에서의 확인 (touch radius/force 값, 가장자리 제스처, 지연)
 - `data/phrases.json`은 기억에 의존한 샘플이다. 공식 MacKenzie & Soukoreff 세트와 대조하고 `make_sets.py`로 다시 만들어야 한다.
 - Python 분석 스크립트(`analysis/`)

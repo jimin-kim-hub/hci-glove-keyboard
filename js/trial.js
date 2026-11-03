@@ -96,8 +96,26 @@ export function createTrialScreen(ctx) {
     $('done').hidden = false;
     $('done').innerHTML = `<b>${ctx.condLabel()} 완료</b><br>이웃 키 오류율 ${pct(c.neighborErrorRate)} · 키 오류율 ${pct(c.keyErrorRate)}<br>
       <span class="muted">본 실험에서는 여기서 간이 설문(NASA-TLX 6문항 + 불편도)으로 넘어갑니다 (아직 미구현).</span>
-      <div class="row"><button data-r="restart">이 조건 다시</button></div>`;
+      <div class="row"><button data-r="nextCond" class="primary" hidden></button><button data-r="restart">이 조건 다시</button></div>`;
     $('done').querySelector('[data-r="restart"]').onclick = start;
+    // Next condition in this participant's counterbalanced order (라틴 방격 다음 조건)
+    const order = ctx.latinOrder();
+    const nextCond = order && $('phase').value === 'main' ? order[order.indexOf(ctx.settings.cond) + 1] : null;
+    const nb = $('done').querySelector('[data-r="nextCond"]');
+    if (nextCond) {
+      nb.hidden = false;
+      nb.textContent = `다음 조건: ${ctx.condLabel(nextCond)} → 보정부터`;
+      nb.onclick = () => {
+        ctx.settings.cond = nextCond;
+        ctx.saveSettings();
+        ctx.logger.log('settings', { pid: ctx.settings.pid, changed: 'cond', cond: nextCond, via: 'next_condition' });
+        ctx.go('calib');
+      };
+    } else if (order && $('phase').value === 'main') {
+      nb.hidden = false;
+      nb.textContent = '4개 조건 완료 → 참가자 화면';
+      nb.onclick = () => ctx.go('participant');
+    }
     $('presented').textContent = '';
     typed = '';
     render();

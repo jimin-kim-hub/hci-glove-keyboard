@@ -4,13 +4,15 @@ import { Keyboard } from './keyboard.js';
 import { Logger } from './logger.js';
 import { decodeBaseline, decodeCalibrated } from './decoder.js';
 import { simulateTouch, mulberry32 } from './simulate.js';
+import { createParticipantScreen } from './participants.js';
 import { createDemoScreen } from './demo.js';
 import { createCalibrationScreen } from './calibration.js';
 import { createTrialScreen } from './trial.js';
 import { createReplayScreen } from './replay.js';
 import { createSettingsScreen } from './settings.js';
 
-const MODELS_KEY = 'glovekb.models.v1';
+const MODELS_KEY = 'glovekb.models.v2';           // { pid: { cond: entry } }
+const PARTICIPANTS_KEY = 'glovekb.participants.v1'; // { pid: { alias, created, order } } — this device only
 
 const DEFAULT_SETTINGS = {
   pid: 'P00', cond: 'D', mode: 'sim', // 'touch' | 'sim'
@@ -21,10 +23,14 @@ const DEFAULT_SETTINGS = {
 function load(key, fallback) {
   try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch (e) { return fallback; }
 }
+function store(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* ignore */ }
+}
 
 const settings = { ...DEFAULT_SETTINGS, ...load(SETTINGS_KEY, {}) };
 settings.sim = { ...DEFAULT_SETTINGS.sim, ...settings.sim };
-const models = load(MODELS_KEY, {}); // { A: {model, report, taps, n}, ... } — frozen after fit
+const models = load(MODELS_KEY, {});
+const participants = load(PARTICIPANTS_KEY, {});
 
 const logger = new Logger();
 const simSeed = Math.floor(Math.random() * 1e9);
@@ -32,11 +38,19 @@ const rng = mulberry32(simSeed);
 
 // ---------- context shared with screens ----------
 const ctx = {
-  settings, models, logger,
-  saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } updateBadges(); },
-  saveModels() { try { localStorage.setItem(MODELS_KEY, JSON.stringify(models)); } catch (e) { /* ignore */ } updateBadges(); },
+  settings, models, participants, logger,
+  saveSettings() { store(SETTINGS_KEY, settings); updateBadges(); },
+  saveModels() { store(MODELS_KEY, models); updateBadges(); },
+  saveParticipants() { store(PARTICIPANTS_KEY, participants); },
   cond() { return CONDITIONS[settings.cond]; },
-  model() { return models[settings.cond]?.model ?? null; },
+  // Calibration entry of the current participant × condition (참가자 × 조건별 모델)
+  entry(pid = settings.pid, cond = settings.cond) { return models[pid]?.[cond] ?? null; },
+  setEntry(entry, pid = settings.pid, cond = settings.cond) {
+    if (entry) (models[pid] ??= {})[cond] = entry;
+    else if (models[pid]) delete models[pid][cond];
+    ctx.saveModels();
+  },
+  model() { return ctx.entry()?.model ?? null; },
   simParams(hand = ctx.cond().hand) { return hand === 'glove' ? settings.sim : SIM_PRESETS.bare; },
   condLabel(cond = settings.cond) {
     const c = CONDITIONS[cond];
@@ -44,11 +58,27 @@ const ctx = {
     if (settings.blind) return `키보드 ${c.keyboard === settings.xIs ? 'X' : 'Y'} · ${hand}`;
     return `${cond} · ${c.keyboard === 'calibrated' ? '보정' : '기본'} 키보드 · ${hand}`;
   },
-  latinOrder() {
-    const n = parseInt(settings.pid.replace(/\D/g, ''), 10);
+  pnum(pid = settings.pid) { return parseInt(String(pid).replace(/\D/g, ''), 10) || 0; },
+  latinOrder(pid = settings.pid) {
+    const n = ctx.pnum(pid);
     return n >= 1 ? LATIN_SQUARE[(n - 1) % 4] : null;
   },
-  pnum() { return parseInt(settings.pid.replace(/\D/g, ''), 10) || 0; },
+  participantLabel(pid = settings.pid) {
+    const alias = participants[pid]?.alias;
+    return alias ? `${pid} (${alias})` : pid;
+  },
+
+  // Switch to a participant; the alias stays on this device and is never written to the log
+  startParticipant(pid, alias) {
+    const order = ctx.latinOrder(pid);
+    if (!participants[pid]) participants[pid] = { alias: alias || '', created: new Date().toISOString(), order };
+    else if (alias) participants[pid].alias = alias;
+    ctx.saveParticipants();
+    settings.pid = pid;
+    if (order) settings.cond = order[0];
+    ctx.saveSettings();
+    logger.log('participant_start', { pid, order, group: order ? (ctx.pnum(pid) - 1) % 4 + 1 : null, cond: settings.cond, mode: settings.mode });
+  },
 
   // Decode one touch with both decoders (섀도 로깅: 둘 다 계산, 하나만 화면에 반영)
   decode(touch) {
@@ -87,9 +117,10 @@ ctx.kb.onLayout = (info) => logger.log('layout', { pid: settings.pid, ...info })
 
 // ---------- screens ----------
 const screens = {
-  demo: createDemoScreen(ctx),
+  participant: createParticipantScreen(ctx),
   calib: createCalibrationScreen(ctx),
   trial: createTrialScreen(ctx),
+  demo: createDemoScreen(ctx),
   replay: createReplayScreen(ctx),
   settings: createSettingsScreen(ctx),
 };
@@ -110,11 +141,11 @@ ctx.go = function go(name) {
 document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => ctx.go(b.dataset.screen)));
 
 function updateBadges() {
+  document.getElementById('badge-pid').textContent = `참가자 ${ctx.participantLabel()}`;
   document.getElementById('badge-cond').textContent = ctx.condLabel();
-  const simBadge = document.getElementById('badge-sim');
-  simBadge.hidden = settings.mode !== 'sim';
+  document.getElementById('badge-sim').hidden = settings.mode !== 'sim';
   const mb = document.getElementById('badge-model');
-  const m = models[settings.cond];
+  const m = ctx.entry();
   mb.textContent = m ? `모델 ${m.model.type} (고정됨)` : '보정 전';
   mb.classList.toggle('warn', !m);
   mb.hidden = settings.blind && !settings.showExp;
@@ -125,8 +156,13 @@ ctx.updateBadges = updateBadges;
 document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('dblclick', e => e.preventDefault());
 document.addEventListener('touchmove', e => { if (e.target.closest('#keyboard')) e.preventDefault(); }, { passive: false });
+// Write pending events before the page goes away (페이지 이탈 전 저장)
+document.addEventListener('visibilitychange', () => { if (document.hidden) logger.flush(); });
 
-logger.startSession({ pid: settings.pid, cond: settings.cond, mode: settings.mode, simSeed, sim: settings.sim });
-updateBadges();
-ctx.go(new URLSearchParams(location.search).get('screen') || 'demo');
+(async function boot() {
+  await logger.init();
+  logger.startSession({ pid: settings.pid, cond: settings.cond, mode: settings.mode, simSeed, sim: settings.sim });
+  updateBadges();
+  ctx.go(new URLSearchParams(location.search).get('screen') || 'participant');
+})();
 window.__glovekb = ctx; // debugging handle (디버그용)

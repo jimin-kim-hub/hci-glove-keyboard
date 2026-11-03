@@ -33,7 +33,8 @@ export function createCalibrationScreen(ctx) {
       </div>
       <div class="row">
         <button data-r="again">다시 보정</button>
-        <button data-r="toDemo" class="primary">비교 데모로 →</button>
+        <button data-r="toTrial" class="primary">따라 쓰기 시작 →</button>
+        <button data-r="toDemo">비교 데모</button>
       </div>
     </div>`;
   const $ = n => el.querySelector(`[data-r="${n}"]`);
@@ -45,7 +46,7 @@ export function createCalibrationScreen(ctx) {
       `<span class="${j < i ? 'done' : j === i ? 'cur' : ''}">${c === ' ' ? '␣' : c}</span>`).join('');
     $('bar').style.width = `${(i / chars.length) * 100}%`;
     $('hint').textContent = i < chars.length
-      ? `노란 테두리 키를 누르세요 (${i}/${chars.length}). 맞고 틀림과 상관없이 다음 글자로 넘어갑니다.`
+      ? `${ctx.participantLabel()} · ${ctx.condLabel()} — 노란 테두리 키를 누르세요 (${i}/${chars.length}). 맞고 틀림과 상관없이 다음 글자로 넘어갑니다.`
       : '';
     ctx.kb.setTarget(i < chars.length ? charToKeyId(chars[i]) : null);
     ctx.kb.setOverlay(null);
@@ -62,8 +63,7 @@ export function createCalibrationScreen(ctx) {
   function finish(sim) {
     const durationS = startT ? (performance.now() - startT) / 1000 : null;
     const { model, report } = fitCalibration(taps);
-    ctx.models[ctx.settings.cond] = { model, report, taps, durationS, sim, at: new Date().toISOString() };
-    ctx.saveModels();
+    ctx.setEntry({ model, report, taps, durationS, sim, at: new Date().toISOString() });
     ctx.logger.log('model_fit', {
       pid: ctx.settings.pid, cond: ctx.settings.cond, model: model.type, n: report.nUsed, nTotal: report.nTotal,
       loo_acc: report.chosen === 'M1' ? Math.max(...report.m1.map(r => r.acc)) : report.m0.acc,
@@ -73,14 +73,14 @@ export function createCalibrationScreen(ctx) {
   }
 
   function showResult() {
-    const entry = ctx.models[ctx.settings.cond];
+    const entry = ctx.entry();
     if (!entry) return reset();
     showingResult = true;
     const { model, report, taps: t, durationS, sim } = entry;
     $('collectBtns').hidden = true;
     $('pangram').hidden = true;
     $('bar').style.width = '100%';
-    $('hint').textContent = `${ctx.condLabel()} — 보정 완료. 모델은 고정되어 본 과제 중에는 학습하지 않습니다.`;
+    $('hint').textContent = `${ctx.participantLabel()} · ${ctx.condLabel()} — 보정 완료. 모델은 고정되어 본 과제 중에는 학습하지 않습니다.`;
     $('result').hidden = false;
     $('chosen').textContent = `선택된 모델: ${model.type === 'M0' ? 'M0 (중앙값 오프셋)' : `M1 (위치 의존 오프셋, λ=${model.lambda})`}`;
     $('reason').textContent = `이유: ${report.reason}`;
@@ -97,8 +97,9 @@ export function createCalibrationScreen(ctx) {
   }
 
   $('restart').onclick = reset;
-  $('again').onclick = () => { delete ctx.models[ctx.settings.cond]; ctx.saveModels(); reset(); };
+  $('again').onclick = () => { ctx.setEntry(null); reset(); };
   $('toDemo').onclick = () => ctx.go('demo');
+  $('toTrial').onclick = () => ctx.go('trial');
   $('auto').onclick = () => {
     taps = simulateCalibration(ctx.simParams(), Math.floor(Math.random() * 1e9));
     taps.forEach((t, j) => ctx.logger.log('calib_tap', {
@@ -111,7 +112,7 @@ export function createCalibrationScreen(ctx) {
 
   return {
     el,
-    show() { ctx.models[ctx.settings.cond] ? showResult() : reset(); },
+    show() { ctx.entry() ? showResult() : reset(); },
     onTap(input) {
       if (showingResult || i >= chars.length) return;
       const target = charToKeyId(chars[i]);
