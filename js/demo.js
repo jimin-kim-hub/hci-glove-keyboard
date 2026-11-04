@@ -15,29 +15,29 @@ export function createDemoScreen(ctx) {
   el.className = 'screen page';
   el.innerHTML = `
     <h1>같은 터치, 다른 판정</h1>
-    <p class="muted">발표·시연용 화면입니다. 실험 기록(P00)은 종합에서 빠집니다.</p>
-    <div class="row">
-      <label class="field inline">손 상태 <select data-r="hand"><option value="glove">장갑</option><option value="bare">맨손</option></select></label>
-      <button data-r="quick" class="sim-only">빠른 자동 보정 (시뮬레이션)</button>
+    <div class="row tools">
+      <label class="field inline"><select data-r="hand"><option value="glove">장갑</option><option value="bare">맨손</option></select></label>
+      <button data-r="quick" class="sim-only">자동 보정 (시뮬레이션)</button>
       <button data-r="calib">직접 보정 (43탭)</button>
     </div>
     <div data-r="calibHost"></div>
     <div data-r="body">
-      <div class="card small" data-r="modelInfo"></div>
       <div class="target-line">목표 키 <b data-r="target">–</b>
         <label class="check"><input type="checkbox" data-r="targetMode" checked> 목표 키 제시</label></div>
-      <div class="last-line" data-r="last">&nbsp;</div>
       <div class="compare">
         <div class="cell"><div class="cap">기본 판정</div><div class="key-big" data-r="base">–</div><div class="mark" data-r="baseMark"></div></div>
         <div class="cell cal"><div class="cap">보정 판정</div><div class="key-big" data-r="cal">–</div><div class="mark" data-r="calMark"></div></div>
       </div>
+      <div class="last-line" data-r="last">&nbsp;</div>
       <div class="tally" data-r="tally"></div>
       <div class="legend">
         <span class="sim-only"><i class="ring" style="border-color:#1c7ed6"></i>노린 위치</span>
         <span><i style="background:#e8590c"></i>실제 터치</span>
         <span><i style="background:#2b8a3e"></i>보정 후 위치</span>
       </div>
-      <div class="row"><button data-r="clear">기록 지우기</button><button data-r="field">학습된 쏠림 보기</button></div>
+      <div class="card small" data-r="modelInfo"></div>
+      <div class="row"><button data-r="clear" class="ghost">기록 지우기</button><button data-r="field" class="ghost">학습된 쏠림 보기</button></div>
+      <p class="muted small">발표·시연용 화면입니다. 기록은 P00으로 남고 종합에서 빠집니다.</p>
     </div>`;
   const $ = n => el.querySelector(`[data-r="${n}"]`);
   let history = [], seq = 0, target = null, runner = null, showField = false;

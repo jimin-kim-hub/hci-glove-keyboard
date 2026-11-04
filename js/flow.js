@@ -11,6 +11,10 @@ const FLOW_KEY = 'glovekb.flow.v1'; // { pid: { step, done } }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const handText = h => (h === 'glove' ? '장갑' : '맨손');
 
+// Sticky bottom button used on every non-keyboard step (모든 화면 공통 하단 버튼)
+const cta = (label, { id = 'next', disabled = false, hint = '' } = {}) =>
+  `<div class="actions"><button class="primary big" id="${id}"${disabled ? ' disabled' : ''}>${label}</button>${hint ? `<span class="hint">${hint}</span>` : ''}</div>`;
+
 let PHRASES = null;
 async function loadPhrases() {
   if (!PHRASES) PHRASES = await (await fetch('data/phrases.json')).json();
@@ -35,10 +39,11 @@ export function createFlowScreen(ctx) {
     ctx.kb.setOverlay(null);
   }
 
-  function setStepbar(text, frac) {
+  function setStepbar(text, frac, count = '') {
     stepbar.hidden = text == null;
     if (text == null) return;
-    stepbar.querySelector('.steptext').textContent = text;
+    stepbar.querySelector('.st-title').textContent = text;
+    stepbar.querySelector('.st-count').textContent = count;
     stepbar.querySelector('.progress div').style.width = `${Math.round(frac * 100)}%`;
   }
 
@@ -51,20 +56,22 @@ export function createFlowScreen(ctx) {
     const nextPid = nextParticipantId(pids);
     const unfinished = Object.entries(progress).filter(([p, s]) => p !== 'P00' && !s.done);
     el.innerHTML = `
-      <h1>장갑 키보드 실험</h1>
+      <div class="hero sm">🧤</div>
+      <p class="eyebrow">HCI 팀 프로젝트 실험</p>
+      <h1>장갑 키보드 실험에<br>오신 것을 환영해요</h1>
       <p class="lead">영어 문장을 휴대폰 키보드로 따라 입력하는 실험입니다. 약 40분 걸리며, 화면 안내를 따라 순서대로 진행합니다.</p>
       <label class="field">별명을 입력하세요
         <input id="alias" maxlength="12" autocomplete="off" placeholder="예: 곰돌이">
         <small>실명은 쓰지 마세요. 별명은 이 기기 화면에만 표시되고, 기록에는 참가자 번호만 남습니다.</small>
       </label>
-      <button class="primary big" id="go">시작하기</button>
       <details class="exp-only">
         <summary>실험자: 참가자 번호 <b>${nextPid}</b> 자동 배정 (바꾸려면 열기)</summary>
         <label class="field">참가자 번호 (1–99, 조건 순서·문장 세트를 정함)
           <input id="num" type="number" inputmode="numeric" min="1" max="99" value="${ctx.pnum(nextPid)}"></label>
       </details>
       ${unfinished.length ? `<h2>이어서 하기</h2><div class="resume">${unfinished.map(([p, s]) =>
-        `<button data-pid="${esc(p)}">${esc(ctx.participantLabel(p))} · ${s.step + 1}단계부터</button>`).join('')}</div>` : ''}`;
+        `<button data-pid="${esc(p)}">${esc(ctx.participantLabel(p))}<span>${s.step + 1}단계부터</span></button>`).join('')}</div>` : ''}
+      ${cta('시작하기', { id: 'go' })}`;
     el.querySelector('#go').onclick = () => {
       const alias = el.querySelector('#alias').value.trim();
       if (!alias) { el.querySelector('#alias').focus(); return; }
@@ -92,15 +99,19 @@ export function createFlowScreen(ctx) {
     renderStep();
   }
 
+  let renderSeq = 0; // a newer render cancels an older one still loading (빠른 단계 이동 시 덮어쓰기 방지)
   async function renderStep() {
     const s = cur();
     if (!s || pid() === 'P00') return renderWelcome();
+    const seq = ++renderSeq;
+    await loadPhrases();
+    if (seq !== renderSeq) return;
     const order = ctx.latinOrder() || 'ABCD';
     steps = buildSteps(order, ctx.settings.xIs);
     const step = steps[s.step];
     runner = null;
     window.scrollTo(0, 0);
-    setStepbar(`${ctx.participantLabel()} · ${s.step + 1}/${steps.length} · ${step.title}`, s.step / (steps.length - 1));
+    setStepbar(step.title, s.step / (steps.length - 1), `${ctx.participantLabel()} · ${s.step + 1} / ${steps.length}`);
     ctx.logger.log('flow_step', { pid: pid(), step: s.step, type: step.type, cond: step.cond ?? null });
     const keyboardStep = step.type === 'calib' || step.type === 'typing';
     setKeyboard(keyboardStep);
@@ -112,7 +123,8 @@ export function createFlowScreen(ctx) {
   const RENDER = {
     intro() {
       el.innerHTML = `
-        <h1>실험 안내</h1>
+        <p class="eyebrow">시작 전에</p>
+        <h1>실험은 이렇게 진행돼요</h1>
         <ul class="steps-list">
           <li>두 가지 영어 키보드 <b>X</b>와 <b>Y</b>로, 화면에 나온 문장을 따라 입력합니다.</li>
           <li>휴대폰은 <b>세로로</b>, <b>두 손으로</b> 잡고 <b>양쪽 엄지</b>로 입력해 주세요.</li>
@@ -123,7 +135,7 @@ export function createFlowScreen(ctx) {
           <li>참여는 자발적이며 <b>언제든 그만둘 수 있습니다.</b></li>
         </ul>
         <label class="check exp-only"><input type="checkbox" id="consent"> 실험자 확인: 동의서 서명을 받았습니다</label>
-        <button class="primary big" id="next" disabled>다음</button>`;
+        ${cta('다음', { disabled: true, hint: '실험자가 동의서를 확인하면 버튼이 켜집니다' })}`;
       const cb = el.querySelector('#consent'), nx = el.querySelector('#next');
       cb.onchange = () => { nx.disabled = !cb.checked; };
       nx.onclick = () => { ctx.logger.log('consent_confirmed', { pid: pid() }); advance(); };
@@ -145,18 +157,18 @@ export function createFlowScreen(ctx) {
           <p class="lead">${glove ? '양손에 장갑을 낀 상태로' : '맨손으로'} 진행합니다. 이번 키보드는 <b class="kb-tag">${step.kbLabel}</b> 입니다.</p>
           <ol class="steps-list"><li>노란 키 차례로 누르기 (약 1분)</li><li>문장 8개 입력 (약 3분)</li><li>짧은 설문</li></ol>`;
       }
-      el.innerHTML = `${body}<button class="primary big" id="next">준비됐어요</button>`;
+      el.innerHTML = `<div class="status">${body}</div>${cta('준비됐어요')}`;
       el.querySelector('#next').onclick = () => advance();
     },
 
     calib(step) {
-      el.innerHTML = `<h2>${step.phase === 'practice' ? '준비 단계 연습' : '준비 단계'} · ${handText(step.hand)}</h2><div id="host"></div>`;
+      el.innerHTML = `<p class="eyebrow">${step.phase === 'practice' ? '준비 단계 연습' : '준비 단계'} · ${handText(step.hand)}</p><div id="host"></div>`;
       runner = runCalibration(ctx, el.querySelector('#host'), {
         logFields: { pid: pid(), cond: step.cond, phase: step.phase, keyboard: step.keyboard, hand: step.hand },
         onDone(entry) {
           ctx.setEntry(entry, pid(), step.modelKey); // frozen; never updated during typing
           runner = null;
-          el.querySelector('#host').innerHTML = `<div class="hero">✅</div><p class="lead center">준비 완료! 잠시 후 넘어갑니다.</p>`;
+          el.querySelector('#host').innerHTML = `<div class="status"><div class="hero">✅</div><h1>준비 완료!</h1><p class="lead">잠시 후 넘어갑니다.</p></div>`;
           setTimeout(() => advance(), 900);
         },
       });
@@ -168,8 +180,8 @@ export function createFlowScreen(ctx) {
         ? P.practice.slice(step.phraseFrom, step.phraseFrom + step.count)
         : P.sets[(COND_INDEX[step.cond] + ctx.pnum()) % 4].slice(0, step.count); // S[(k + p) mod 4]
       const model = ctx.entry(pid(), step.modelKey)?.model ?? null;
-      el.innerHTML = `<h2>키보드 <span class="kb-tag">${step.kbLabel}</span> · ${handText(step.hand)}${step.phase === 'practice' ? ' · 연습' : ''}</h2>
-        <p class="muted small">위 문장을 빠르고 정확하게 입력하고 버튼을 누르세요.</p><div id="host"></div>`;
+      el.innerHTML = `<p class="eyebrow">키보드 <span class="kb-tag">${step.kbLabel}</span> · ${handText(step.hand)}${step.phase === 'practice' ? ' · 연습' : ''}</p>
+        <div id="host"></div>`;
       runner = runTyping(ctx, el.querySelector('#host'), {
         phrases, keyboard: step.keyboard, model,
         logFields: { pid: pid(), cond: step.cond, phase: step.phase, keyboard: step.keyboard, hand: step.hand, kbLabel: step.kbLabel },
@@ -178,8 +190,8 @@ export function createFlowScreen(ctx) {
     },
 
     tlx(step) {
-      el.innerHTML = `<h1>방금 한 과제는 어땠나요?</h1>
-        <p class="muted">키보드 ${step.kbLabel} · ${handText(step.hand)} — 막대를 움직여 답해 주세요.</p>
+      el.innerHTML = `<p class="eyebrow">키보드 ${step.kbLabel} · ${handText(step.hand)}</p><h1>방금 한 과제는 어땠나요?</h1>
+        <p class="lead">막대를 움직여 답해 주세요. 7개 문항에 모두 답하면 다음으로 넘어갑니다.</p>
         ${TLX_ITEMS.map((it, j) => `
           <div class="q"><div class="qtitle">${j + 1}. ${it.name}</div><div class="qtext">${it.q}</div>
             <input type="range" min="0" max="100" step="5" value="50" class="untouched" data-tlx="${j}">
@@ -187,7 +199,7 @@ export function createFlowScreen(ctx) {
         <div class="q"><div class="qtitle">7. 불편도</div><div class="qtext">${DISCOMFORT.q}</div>
           <div class="likert" data-likert="d">${Array.from({ length: DISCOMFORT.max }, (_, k) => `<button data-v="${k + 1}">${k + 1}</button>`).join('')}</div>
           <div class="anchors"><span>${DISCOMFORT.lo}</span><span>${DISCOMFORT.hi}</span></div></div>
-        <button class="primary big" id="next" disabled>다음</button>`;
+        ${cta('다음', { disabled: true })}`;
       const tlx = Array(6).fill(null);
       let disc = null;
       const nx = el.querySelector('#next');
@@ -208,10 +220,10 @@ export function createFlowScreen(ctx) {
 
     rest(step) {
       const t0 = Date.now();
-      el.innerHTML = `<div class="hero">☕</div><h1>잠시 쉬세요</h1>
-        <p class="lead">손을 풀고 쉬세요. 준비되면 다음으로 넘어갑니다.<br><span class="muted">(${step.block}/4 조건 완료)</span></p>
-        <div class="timer center">0:00</div>
-        <button class="primary big" id="next">계속하기</button>`;
+      el.innerHTML = `<div class="status"><div class="hero">☕</div><h1>잠시 쉬어 가세요</h1>
+        <p class="lead">손을 풀고 쉬세요. 준비되면 계속하기를 누르세요.</p>
+        <div class="timer">0:00</div><p class="muted small">4개 중 ${step.block}개 완료</p></div>
+        ${cta('계속하기')}`;
       const timer = el.querySelector('.timer');
       const iv = setInterval(() => {
         if (!el.contains(timer)) return clearInterval(iv);
@@ -222,11 +234,12 @@ export function createFlowScreen(ctx) {
     },
 
     sus(step) {
-      el.innerHTML = `<h1>키보드 <span class="kb-tag">${step.kbLabel}</span>에 대한 생각</h1>
-        <p class="muted">맨손·장갑 상태를 모두 떠올려 답해 주세요. 1 = 전혀 그렇지 않다, 5 = 매우 그렇다</p>
-        ${SUS_ITEMS.map((q, j) => `<div class="q"><div class="qtext">${j + 1}. ${q}</div>
-          <div class="likert" data-likert="${j}">${[1, 2, 3, 4, 5].map(v => `<button data-v="${v}">${v}</button>`).join('')}</div></div>`).join('')}
-        <button class="primary big" id="next" disabled>다음</button>`;
+      el.innerHTML = `<p class="eyebrow">사용성 설문</p><h1>키보드 <span class="kb-tag">${step.kbLabel}</span>는 어땠나요?</h1>
+        <p class="lead">맨손·장갑 상태를 모두 떠올려 답해 주세요.<br><b>1</b> 전혀 그렇지 않다 · <b>5</b> 매우 그렇다</p>
+        ${SUS_ITEMS.map((q, j) => `<div class="q"><div class="qtitle">${j + 1} / 10</div><div class="qtext">${q}</div>
+          <div class="likert" data-likert="${j}">${[1, 2, 3, 4, 5].map(v => `<button data-v="${v}">${v}</button>`).join('')}</div>
+          <div class="anchors"><span>전혀 그렇지 않다</span><span>매우 그렇다</span></div></div>`).join('')}
+        ${cta('다음', { disabled: true })}`;
       const r = Array(10).fill(null);
       const nx = el.querySelector('#next');
       el.querySelectorAll('[data-likert]').forEach(box => bindLikert(box, v => { r[+box.dataset.likert] = v; nx.disabled = r.some(x => x == null); }));
@@ -238,10 +251,10 @@ export function createFlowScreen(ctx) {
 
     pref() {
       const qs = [['glove', '장갑을 꼈을 때 어느 키보드가 더 좋았나요?'], ['bare', '맨손일 때 어느 키보드가 더 좋았나요?']];
-      el.innerHTML = `<h1>어느 키보드가 더 좋았나요?</h1>
+      el.innerHTML = `<p class="eyebrow">마지막 질문</p><h1>어느 키보드가 더 좋았나요?</h1>
         ${qs.map(([k, q]) => `<div class="q"><div class="qtext">${q}</div>
           <div class="likert wide" data-likert="${k}"><button data-v="X">X</button><button data-v="same">비슷함</button><button data-v="Y">Y</button></div></div>`).join('')}
-        <button class="primary big" id="next" disabled>다음</button>`;
+        ${cta('결과 보기', { disabled: true })}`;
       const ans = {};
       const nx = el.querySelector('#next');
       el.querySelectorAll('[data-likert]').forEach(box => bindLikert(box, v => { ans[box.dataset.likert] = v; nx.disabled = Object.keys(ans).length < 2; }));
@@ -269,17 +282,18 @@ export function createFlowScreen(ctx) {
         const wpmTxt = c?.wpm != null ? c.wpm.toFixed(1) : '–';
         return `<tr><td>키보드 ${lbl}</td><td>${handText(hand)}</td><td>${acc}</td><td>${wpmTxt}</td></tr>`;
       })).join('');
-      el.innerHTML = `<div class="hero">🙏</div><h1>참여해 주셔서 감사합니다!</h1>
-        <p class="lead">${esc(ctx.participantLabel())} 님의 결과입니다.</p>
+      el.innerHTML = `<div class="status"><div class="hero">🙏</div><h1>참여해 주셔서<br>감사합니다!</h1>
+        <p class="lead">${esc(ctx.participantLabel())} 님의 결과입니다.</p></div>
         <table class="result">
           <tr><th>키보드</th><th>손</th><th>정확도</th><th>속도 (WPM)</th></tr>${rows}
         </table>
         <p class="muted small">정확도 = 의도한 글자가 그대로 입력된 비율, WPM = 분당 단어 수(5글자 = 1단어). 참고용 수치입니다.</p>
-        <div class="card">키보드 <b>${xIsCal ? 'X' : 'Y'}</b>는 장갑 상황에 맞춰 터치 위치를 보정하는 <b>새 키보드</b>였고,
+        <div class="card accent">키보드 <b>${xIsCal ? 'X' : 'Y'}</b>는 장갑 상황에 맞춰 터치 위치를 보정하는 <b>새 키보드</b>였고,
           키보드 <b>${xIsCal ? 'Y' : 'X'}</b>는 보정 없는 <b>기본 키보드</b>였습니다.
           ${sus.X != null ? `<br>사용성 점수(SUS): X ${sus.X} · Y ${sus.Y}` : ''}</div>
         <h2 class="exp-only">실험자</h2>
-        <div class="exp-only stack">
+        <p class="muted small exp-only">브라우저 저장소는 지워질 수 있으니 참가자마다 바로 내보내세요.</p>
+        <div class="exp-only stack end">
           <button class="primary big" id="export">이 참가자 기록 내보내기 (JSONL)</button>
           <button class="big" id="nextP">다음 참가자 시작</button>
         </div>`;

@@ -9,10 +9,13 @@ export function runCalibration(ctx, host, { logFields, onDone }) {
   let i = 0, startT = null;
   const taps = [];
   host.innerHTML = `
-    <p class="lead">노란 테두리 키를 <b>차례대로</b> 누르세요.<br><span class="muted">맞게 눌렀는지는 신경 쓰지 말고, 평소처럼 누르면 됩니다.</span></p>
-    <div class="pangram"></div>
-    <div class="progress"><div></div></div>
-    <div class="muted center count"></div>`;
+    <h2>노란 키를 차례대로 누르세요</h2>
+    <p class="lead">맞게 눌렀는지는 신경 쓰지 말고, 평소처럼 누르면 됩니다.</p>
+    <div class="panel">
+      <div class="pangram"></div>
+      <div class="progress"><div></div></div>
+      <div class="muted count"></div>
+    </div>`;
   const pg = host.querySelector('.pangram');
   const bar = host.querySelector('.progress div');
   const count = host.querySelector('.count');

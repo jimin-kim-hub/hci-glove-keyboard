@@ -8,6 +8,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Glove KB">
   <title>장갑 키보드 실험</title>
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17171c" media="(prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -17,9 +20,9 @@
         <span class="title">장갑 키보드 실험</span>
         <span class="ver"></span>
         <span id="badge-sim" class="badge sim" hidden>시뮬레이션 (실제 데이터 아님)</span>
-        <button id="exp-btn" class="ghost">실험자</button>
+        <button id="exp-btn" class="ghost">실험자 ⚙︎</button>
       </div>
-      <div id="stepbar" hidden><div class="steptext"></div><div class="progress"><div></div></div></div>
+      <div id="stepbar" hidden><div class="steptext"><span class="st-title"></span><span class="st-count"></span></div><div class="progress"><div></div></div></div>
       <nav id="tabs" hidden>
         <button data-screen="summary">종합</button>
         <button data-screen="demo">시연</button>

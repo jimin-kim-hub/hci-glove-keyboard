@@ -9,14 +9,16 @@ export function runTyping(ctx, host, { phrases, keyboard, model, logFields, onDo
   let idx = 0, typed = '', keys = [], tStart = null;
   const results = [];
   host.innerHTML = `
-    <div class="trial-count muted"></div>
-    <div class="presented"></div>
-    <div class="typed"></div>
+    <div class="panel">
+      <div class="panel-label"><span>이 문장을 따라 입력하세요</span><span class="trial-count"></span></div>
+      <div class="presented"></div>
+      <div class="typed"></div>
+    </div>
     <button class="next">다음 문장 →</button>`;
   const $ = s => host.querySelector(s);
 
   function render() {
-    $('.trial-count').textContent = `문장 ${idx + 1} / ${phrases.length}`;
+    $('.trial-count').textContent = `${idx + 1} / ${phrases.length}`;
     $('.presented').textContent = phrases[idx];
     $('.typed').innerHTML = `${esc(typed).replace(/ /g, '&nbsp;')}<span class="caret"></span>`;
     $('.next').textContent = idx === phrases.length - 1 ? '완료 →' : '다음 문장 →';
