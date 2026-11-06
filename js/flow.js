@@ -333,6 +333,8 @@ export function createFlowScreen(ctx) {
     onTap(input) { if (runner) runner.onTap(input); },
     // Experimenter controls (실험자: 단계 이동)
     jump(delta) { if (cur()) advance(delta); },
+    // Forget every participant's progress (전체 초기화 시 이어서 하기 목록 삭제)
+    reset() { renderSeq++; progress = {}; saveProgress(); },
     status() {
       const s = cur();
       if (!s || pid() === 'P00') return null;

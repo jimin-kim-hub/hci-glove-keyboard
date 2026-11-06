@@ -34,7 +34,7 @@ export function createSettingsScreen(ctx) {
     <h2>초기화</h2>
     <div class="stack">
       <button data-r="clearModels" class="danger">현재 참가자 보정 모델 지우기</button>
-      <button data-r="clearLog" class="danger">이 기기의 모든 기록 지우기</button>
+      <button data-r="clearLog" class="danger">이 기기 전체 초기화 (기록·참가자 번호·진행 상황)</button>
     </div>
 
     <h2>화면 크기</h2>
@@ -73,7 +73,7 @@ export function createSettingsScreen(ctx) {
   $('simReset').onclick = () => { s.sim = { ...SIM_PRESETS.glove }; changed('sim'); };
   $('clearModels').onclick = () => { if (confirm(`${s.pid}의 보정 모델을 지울까요? (기록은 남습니다)`)) { delete ctx.models[s.pid]; ctx.saveModels(); sync(); } };
   $('clearLog').onclick = async () => {
-    if (confirm('이 기기의 모든 참가자 기록을 지울까요? 되돌릴 수 없습니다. 먼저 종합 화면에서 전체 기록을 내보내세요.')) { await ctx.logger.clear(); sync(); }
+    if (confirm('이 기기를 전체 초기화할까요?\n\n모든 기록, 보정 모델, 이어서 하기 목록이 지워지고 참가자 번호는 P01부터 다시 시작합니다. 되돌릴 수 없습니다. 먼저 종합 화면에서 전체 기록을 내보내세요.')) { await ctx.resetAll(); sync(); }
   };
 
   document.body.classList.toggle('sim-mode', s.mode === 'sim');

@@ -119,6 +119,16 @@ const screens = {
 };
 ctx.flowStatus = () => screens.flow.status();
 ctx.flowJump = (d) => screens.flow.jump(d);
+// Full reset before the real experiment: logs, participant numbers, resume list, models (본 실험 전 전체 초기화)
+ctx.resetAll = async () => {
+  await logger.clear();
+  for (const obj of [models, participants]) for (const k of Object.keys(obj)) delete obj[k];
+  ctx.saveModels();
+  ctx.saveParticipants();
+  screens.flow.reset();
+  settings.pid = 'P00';
+  ctx.saveSettings();
+};
 
 const main = document.getElementById('screens');
 for (const s of Object.values(screens)) { s.el.hidden = true; main.appendChild(s.el); }
