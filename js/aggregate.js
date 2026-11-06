@@ -39,6 +39,8 @@ export function summarizeParticipants(events) {
     if (e.wall && e.wall > p.lastT) p.lastT = e.wall;
     const c = p.conds[e.cond];
     if (!c) continue;
+    // A restarted typing step (나가기·새로고침 후 재시작) replaces the earlier partial attempt
+    if (e.ev === 'typing_start' && e.phase === 'main') Object.assign(c, { trials: 0, wpmSum: 0, keys: [], keysBase: [], keysCal: [] });
     if (e.ev === 'model_fit') { c.calibrated = true; c.model = e.model; c.sim = c.sim || !!e.sim; }
     if (e.ev === 'trial_end' && e.phase === 'main') { c.trials++; c.wpmSum += e.live?.wpm ?? 0; }
     if (e.ev === 'touch' && e.phase === 'main' && e.keyShown !== 'shift') {

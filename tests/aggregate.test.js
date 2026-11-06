@@ -38,3 +38,16 @@ test('next participant id', () => {
   assert.equal(nextParticipantId([]), 'P01');
   assert.equal(nextParticipantId(['P01', 'P03', 'P00']), 'P04');
 });
+
+test('a restarted typing step replaces the earlier partial attempt', () => {
+  const start = n => ({ ev: 'typing_start', sid: 's-P01', n, pid: 'P01', cond: 'B', phase: 'main' });
+  const end = n => ({ ev: 'trial_end', sid: 's-P01', n, pid: 'P01', cond: 'B', phase: 'main', live: { wpm: 20 } });
+  const events = [
+    start(0), touch('P01', 'B', 1, 'w', 'e'), end(2),
+    start(3), touch('P01', 'B', 4, 'w', 'w'), end(5),
+  ];
+  const c = summarizeParticipants(events)[0].conds.B;
+  assert.equal(c.trials, 1);
+  assert.equal(c.shown.keystrokes, 1);
+  assert.equal(c.shown.keyErrorRate, 0);
+});

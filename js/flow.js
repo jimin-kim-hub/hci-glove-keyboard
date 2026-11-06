@@ -28,10 +28,11 @@ export function createFlowScreen(ctx) {
   try { progress = JSON.parse(localStorage.getItem(FLOW_KEY)) || {}; } catch (e) { /* ignore */ }
   const saveProgress = () => { try { localStorage.setItem(FLOW_KEY, JSON.stringify(progress)); } catch (e) { /* ignore */ } };
 
-  let steps = [], runner = null;
+  let steps = [], runner = null, renderSeq = 0;
   const pid = () => ctx.settings.pid;
   const cur = () => progress[pid()];
   const stepbar = document.getElementById('stepbar');
+  const exitBtn = document.getElementById('exit-btn');
 
   function setKeyboard(on) {
     document.body.classList.toggle('kb-on', on);
@@ -41,6 +42,7 @@ export function createFlowScreen(ctx) {
 
   function setStepbar(text, frac, count = '') {
     stepbar.hidden = text == null;
+    exitBtn.hidden = text == null;
     if (text == null) return;
     stepbar.querySelector('.st-title').textContent = text;
     stepbar.querySelector('.st-count').textContent = count;
@@ -49,6 +51,7 @@ export function createFlowScreen(ctx) {
 
   // ---------- start screen ----------
   function renderWelcome() {
+    renderSeq++; // cancels any step still loading (로딩 중인 단계 취소)
     runner = null;
     setKeyboard(false);
     setStepbar(null);
@@ -91,15 +94,27 @@ export function createFlowScreen(ctx) {
     renderStep();
   }
 
+  // Back to the start screen; progress is kept and "이어서 하기" resumes this step from its beginning
+  exitBtn.onclick = () => {
+    const s = cur();
+    if (!s) return;
+    if (!s.done && !confirm(`시작 화면으로 나갈까요?\n\n진행 상황은 저장됩니다. 나중에 '이어서 하기'를 누르면 지금 단계(${s.step + 1}단계)의 처음부터 다시 합니다.`)) return;
+    ctx.logger.log('flow_exit', { pid: pid(), step: s.step, done: s.done });
+    ctx.settings.pid = 'P00';
+    ctx.saveSettings();
+    renderWelcome();
+  };
+
   // ---------- steps ----------
   function advance(delta = 1) {
     const s = cur();
+    if (!s) return; // e.g. the participant left during the short "준비 완료" pause
     s.step = Math.max(0, Math.min(steps.length - 1, s.step + delta));
     saveProgress();
     renderStep();
   }
 
-  let renderSeq = 0; // a newer render cancels an older one still loading (빠른 단계 이동 시 덮어쓰기 방지)
+  // a newer render cancels an older one still loading (빠른 단계 이동 시 덮어쓰기 방지)
   async function renderStep() {
     const s = cur();
     if (!s || pid() === 'P00') return renderWelcome();
@@ -182,6 +197,8 @@ export function createFlowScreen(ctx) {
       const model = ctx.entry(pid(), step.modelKey)?.model ?? null;
       el.innerHTML = `<p class="eyebrow">키보드 <span class="kb-tag">${step.kbLabel}</span> · ${handText(step.hand)}${step.phase === 'practice' ? ' · 연습' : ''}</p>
         <div id="host"></div>`;
+      // Marks a fresh attempt: a restarted step replaces the earlier partial one in the live summary
+      ctx.logger.log('typing_start', { pid: pid(), cond: step.cond, phase: step.phase, keyboard: step.keyboard, hand: step.hand });
       runner = runTyping(ctx, el.querySelector('#host'), {
         phrases, keyboard: step.keyboard, model,
         logFields: { pid: pid(), cond: step.cond, phase: step.phase, keyboard: step.keyboard, hand: step.hand, kbLabel: step.kbLabel },
