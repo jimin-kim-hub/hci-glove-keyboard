@@ -241,6 +241,7 @@ table.result { border-collapse: collapse; width: 100%; font-size: 15px; font-var
 :not(.table-wrap) > table.result { background: var(--surface); border-radius: var(--r-lg); overflow: hidden; margin: 8px 0 12px; }
 table.result th, table.result td { padding: 13px 10px; text-align: center; border-bottom: 1px solid var(--line); }
 table.result tr:last-child td { border-bottom: 0; }
+table.result td { white-space: nowrap; }
 table.result th { font-size: 12px; font-weight: 600; color: var(--text-3); }
 table.result td:first-child, table.result th:first-child { text-align: left; padding-left: 18px; }
 table.result td:first-child { font-weight: 600; }

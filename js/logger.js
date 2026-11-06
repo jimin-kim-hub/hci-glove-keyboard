@@ -102,10 +102,14 @@ export class Logger {
   export(pid = null) {
     const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const text = this.toJSONL(pid ? (e => e.pid === pid) : undefined);
-    const blob = new Blob([text], { type: 'application/x-ndjson' });
+    this.download(`glovekb_${pid || 'ALL'}_${stamp}.jsonl`, text, 'application/x-ndjson');
+  }
+
+  download(filename, text, type) {
+    const blob = new Blob([text], { type });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `glovekb_${pid || 'ALL'}_${stamp}.jsonl`;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
