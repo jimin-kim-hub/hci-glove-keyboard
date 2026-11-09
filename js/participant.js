@@ -44,6 +44,7 @@ export function participantDetail(events, pid) {
       offset: calibOffset(taps),
       fit: fit && { model: fit.model, baselineAcc: fit.baseline_acc ?? null, looAcc: fit.loo_acc ?? null, seconds: fit.durationS ?? null, reason: fit.reason ?? '' },
       tlx: survey?.tlxRaw ?? null,
+      sus: last('sus', inCond)?.score ?? null,
       discomfort: survey?.discomfort ?? null,
     };
   });
@@ -55,10 +56,11 @@ export function participantDetail(events, pid) {
     sim: mine.some(e => e.sim === true),
     touches: mine.filter(e => e.ev === 'touch').length,
     conds,
-    sus: {
-      calibrated: last('sus', e => e.keyboard === 'calibrated')?.score ?? null,
-      baseline: last('sus', e => e.keyboard === 'baseline')?.score ?? null,
-    },
+    // SUS per keyboard = mean over its two conditions (v0.7+); older logs had one SUS per keyboard at the end
+    sus: Object.fromEntries(['calibrated', 'baseline'].map(kb => {
+      const xs = conds.filter(c => c.keyboard === kb && c.sus != null).map(c => c.sus);
+      return [kb, xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : last('sus', e => e.keyboard === kb && !e.cond)?.score ?? null];
+    })),
     preference: pref && { glove: pref.gloveKeyboard, bare: pref.bareKeyboard },
   };
 }
@@ -75,7 +77,7 @@ export function detailToCsv(d) {
     d.pid, c.cond, c.keyboard, c.hand, c.trials, c.restarts,
     c.shown ? num(1 - c.shown.keyErrorRate) : '', num(c.shown?.keyErrorRate), num(c.shown?.neighborErrorRate), num(c.wpm, 2), c.shown?.backspaces ?? '',
     num(c.base?.neighborErrorRate), num(c.cal?.neighborErrorRate), c.fit?.model ?? '', num(c.fit?.baselineAcc), num(c.fit?.looAcc), num(c.fit?.seconds, 1),
-    num(c.offset?.dx, 3), num(c.offset?.dy, 3), num(c.tlx, 1), c.discomfort ?? '', d.sus[c.keyboard] ?? '',
+    num(c.offset?.dx, 3), num(c.offset?.dy, 3), num(c.tlx, 1), c.discomfort ?? '', c.sus ?? d.sus[c.keyboard] ?? '',
     d.preference?.glove ?? '', d.preference?.bare ?? '', d.sim ? 1 : 0,
   ].join(','));
   return [CSV_COLUMNS.join(','), ...rows].join('\n') + '\n';

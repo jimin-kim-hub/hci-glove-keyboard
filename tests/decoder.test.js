@@ -164,3 +164,21 @@ test('SIMULATION: with no offset, calibration does not hurt much', () => {
   console.log(`  [sim no-offset] baseline ${(baseErr / n * 100).toFixed(1)}% vs calibrated ${(calErr / n * 100).toFixed(1)}%`);
   assert.ok(calErr / n <= baseErr / n + 0.03);
 });
+
+test('model policy fixes M0 or M1 for everyone and always returns both models (모델 고정)', () => {
+  const taps = simulateCalibration(SIM_PRESETS.glove, 7);
+  const auto = fitCalibration(taps);
+  assert.equal(auto.report.chosen, auto.report.auto);
+  for (const policy of ['M0', 'M1']) {
+    const r = fitCalibration(taps, policy);
+    assert.equal(r.model.type, policy);
+    assert.equal(r.report.chosen, policy);
+    assert.equal(r.report.auto, auto.report.auto); // what auto would have picked is still reported
+    assert.equal(r.alt.M0.type, 'M0');
+    assert.equal(r.alt.M1.type, 'M1');
+  }
+  // too few taps: M1 policy falls back to M0
+  const few = fitCalibration(taps.slice(0, 8), 'M1');
+  assert.equal(few.model.type, 'M0');
+  assert.equal(few.alt.M1, null);
+});

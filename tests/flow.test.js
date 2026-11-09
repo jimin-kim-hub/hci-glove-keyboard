@@ -4,14 +4,14 @@ import { buildSteps, TRIALS_PER_COND } from '../js/steps.js';
 import { susScore, tlxRaw } from '../js/surveys.js';
 import { LATIN_SQUARE, CONDITIONS } from '../js/config.js';
 
-test('steps follow the Latin-square order with calib → 8 phrases → TLX per condition', () => {
+test('steps follow the Latin-square order with calib → 8 phrases → TLX → SUS per condition', () => {
   const steps = buildSteps('BCAD');
   const mains = steps.filter(s => s.type === 'typing' && s.phase === 'main');
   assert.deepEqual(mains.map(s => s.cond), ['B', 'C', 'A', 'D']);
   assert.ok(mains.every(s => s.count === TRIALS_PER_COND));
   for (const cond of 'BCAD') {
     const types = steps.filter(s => s.cond === cond).map(s => s.type);
-    assert.deepEqual(types.slice(0, 4), ['hand', 'calib', 'typing', 'tlx']);
+    assert.deepEqual(types.slice(0, 5), ['hand', 'calib', 'typing', 'tlx', 'sus']);
   }
   assert.equal(steps.filter(s => s.type === 'rest').length, 3);
   assert.equal(steps[0].type, 'intro');
@@ -29,7 +29,9 @@ test('every condition is calibrated with its own model key (조건별 보정)', 
 test('X/Y labels are blind and consistent', () => {
   const steps = buildSteps('ABDC', 'baseline');
   for (const s of steps.filter(s => s.kbLabel)) assert.equal(s.kbLabel, s.keyboard === 'baseline' ? 'X' : 'Y');
-  assert.deepEqual(steps.filter(s => s.type === 'sus').map(s => s.kbLabel), ['X', 'Y']);
+  const sus = steps.filter(s => s.type === 'sus');
+  assert.equal(sus.length, 4); // one SUS per condition, right after it
+  for (const s of sus) assert.equal(s.kbLabel, s.keyboard === 'baseline' ? 'X' : 'Y');
 });
 
 test('SUS scoring', () => {

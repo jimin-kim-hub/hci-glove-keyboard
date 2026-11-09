@@ -25,6 +25,12 @@ export function createSettingsScreen(ctx) {
       <button data-r="simReset">기본값으로</button>
     </fieldset>
 
+    <h2>보정 모델</h2>
+    <label class="field">보정 키보드가 쓸 모델
+      <select data-r="modelPolicy"><option value="auto">자동 선택 (LOO 정확도가 높은 쪽)</option><option value="M0">M0 고정 (중앙값 이동)</option><option value="M1">M1 고정 (키 위치별 회귀)</option></select>
+      <small>파일럿 뒤 하나로 정해 모든 참가자에게 같게 씁니다(튜터 피드백). 설정과 관계없이 두 모델의 판정은 모두 기록됩니다. 보정 단계 이후 바꾸면 그 참가자에게는 적용되지 않습니다.</small>
+    </label>
+
     <h2>블라인드</h2>
     <label class="field">"키보드 X"로 부를 키보드
       <select data-r="xIs"><option value="calibrated">보정 키보드</option><option value="baseline">기본 키보드</option></select>
@@ -42,7 +48,7 @@ export function createSettingsScreen(ctx) {
   const $ = n => el.querySelector(`[data-r="${n}"]`);
 
   function sync() {
-    $('mode').value = s.mode; $('xIs').value = s.xIs;
+    $('mode').value = s.mode; $('xIs').value = s.xIs; $('modelPolicy').value = s.modelPolicy;
     $('simBox').hidden = s.mode !== 'sim';
     el.querySelectorAll('[data-s]').forEach(inp => { inp.value = s.sim[inp.dataset.s]; });
     el.querySelectorAll('[data-v]').forEach(sp => { sp.textContent = (+s.sim[sp.dataset.v]).toFixed(2); });
@@ -60,12 +66,13 @@ export function createSettingsScreen(ctx) {
 
   function changed(what) {
     ctx.saveSettings();
-    ctx.logger.log('settings', { pid: s.pid, changed: what, mode: s.mode, sim: s.sim, xIs: s.xIs });
+    ctx.logger.log('settings', { pid: s.pid, changed: what, mode: s.mode, sim: s.sim, xIs: s.xIs, modelPolicy: s.modelPolicy });
     sync();
   }
 
   $('mode').onchange = () => { s.mode = $('mode').value; changed('mode'); };
   $('xIs').onchange = () => { s.xIs = $('xIs').value; changed('xIs'); };
+  $('modelPolicy').onchange = () => { s.modelPolicy = $('modelPolicy').value; changed('modelPolicy'); };
   el.querySelectorAll('[data-s]').forEach(inp => {
     inp.oninput = () => { s.sim[inp.dataset.s] = +inp.value; sync(); };
     inp.onchange = () => changed('sim');

@@ -26,12 +26,13 @@ export function buildSteps(order, xIs = 'calibrated') {
     steps.push({ ...base, type: 'hand', title: `조건 ${i + 1}/4 준비` });
     steps.push({ ...base, type: 'calib', phase: 'calib', modelKey: cond, title: `조건 ${i + 1}/4 · 보정` });
     steps.push({ ...base, type: 'typing', phase: 'main', modelKey: cond, count: TRIALS_PER_COND, title: `조건 ${i + 1}/4 · 문장 입력` });
+    // Tutor feedback 11/9: TLX·discomfort and SUS right after each condition (조건 직후 바로 설문)
     steps.push({ ...base, type: 'tlx', title: `조건 ${i + 1}/4 · 설문` });
+    steps.push({ ...base, type: 'sus', title: `조건 ${i + 1}/4 · 사용성 설문` });
     if (i < order.length - 1) steps.push({ ...base, type: 'rest', title: '휴식' });
   });
 
   steps.push({ type: 'hand', hand: 'bare', title: '마무리 준비', final: true });
-  for (const kb of keyboards) steps.push({ type: 'sus', keyboard: kb, kbLabel: label(kb), title: `키보드 ${label(kb)} 사용성 설문` });
   steps.push({ type: 'pref', title: '선호도' });
   steps.push({ type: 'results', title: '결과' });
   return steps;

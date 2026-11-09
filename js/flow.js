@@ -164,13 +164,13 @@ export function createFlowScreen(ctx) {
           <ol class="steps-list"><li>노란 키 차례로 누르기 (연습)</li><li>키보드 X로 문장 3개</li><li>키보드 Y로 문장 3개</li></ol>`;
       } else if (step.final) {
         body = `<div class="hero">🎉</div><h1>입력 과제가 모두 끝났습니다</h1>
-          <p class="lead">장갑을 벗어 주세요. 마지막으로 짧은 설문 3개가 남았습니다.</p>`;
+          <p class="lead">장갑을 벗어 주세요. 마지막으로 어느 키보드가 더 좋았는지 묻는 질문이 남았습니다.</p>`;
       } else {
         const glove = step.hand === 'glove';
         body = `<div class="hero">${glove ? '🧤' : '✋'}</div>
           <h1>${glove ? '장갑을 껴 주세요' : '장갑을 벗어 주세요'}</h1>
           <p class="lead">${glove ? '양손에 장갑을 낀 상태로' : '맨손으로'} 진행합니다. 이번 키보드는 <b class="kb-tag">${step.kbLabel}</b> 입니다.</p>
-          <ol class="steps-list"><li>노란 키 차례로 누르기 (약 1분)</li><li>문장 8개 입력 (약 3분)</li><li>짧은 설문</li></ol>`;
+          <ol class="steps-list"><li>노란 키 차례로 누르기 (약 1분)</li><li>문장 8개 입력 (약 3분)</li><li>짧은 설문 2개 (작업 부담·사용성)</li></ol>`;
       }
       el.innerHTML = `<div class="status">${body}</div>${cta('준비됐어요')}`;
       el.querySelector('#next').onclick = () => advance();
@@ -194,13 +194,14 @@ export function createFlowScreen(ctx) {
       const phrases = step.phase === 'practice'
         ? P.practice.slice(step.phraseFrom, step.phraseFrom + step.count)
         : P.sets[(COND_INDEX[step.cond] + ctx.pnum()) % 4].slice(0, step.count); // S[(k + p) mod 4]
-      const model = ctx.entry(pid(), step.modelKey)?.model ?? null;
+      const entry = ctx.entry(pid(), step.modelKey);
+      const model = entry?.model ?? null;
       el.innerHTML = `<p class="eyebrow">키보드 <span class="kb-tag">${step.kbLabel}</span> · ${handText(step.hand)}${step.phase === 'practice' ? ' · 연습' : ''}</p>
         <div id="host"></div>`;
       // Marks a fresh attempt: a restarted step replaces the earlier partial one in the live summary
       ctx.logger.log('typing_start', { pid: pid(), cond: step.cond, phase: step.phase, keyboard: step.keyboard, hand: step.hand });
       runner = runTyping(ctx, el.querySelector('#host'), {
-        phrases, keyboard: step.keyboard, model,
+        phrases, keyboard: step.keyboard, model, alt: entry?.alt ?? null,
         logFields: { pid: pid(), cond: step.cond, phase: step.phase, keyboard: step.keyboard, hand: step.hand, kbLabel: step.kbLabel },
         onDone() { runner = null; advance(); },
       });
@@ -251,8 +252,8 @@ export function createFlowScreen(ctx) {
     },
 
     sus(step) {
-      el.innerHTML = `<p class="eyebrow">사용성 설문</p><h1>키보드 <span class="kb-tag">${step.kbLabel}</span>는 어땠나요?</h1>
-        <p class="lead">맨손·장갑 상태를 모두 떠올려 답해 주세요.<br><b>1</b> 전혀 그렇지 않다 · <b>5</b> 매우 그렇다</p>
+      el.innerHTML = `<p class="eyebrow">키보드 <span class="kb-tag">${step.kbLabel}</span> · ${handText(step.hand)} · 사용성 설문</p><h1>방금 쓴 키보드는 어땠나요?</h1>
+        <p class="lead">방금 ${handText(step.hand)} 상태로 쓴 경험만 떠올려 답해 주세요.<br><b>1</b> 전혀 그렇지 않다 · <b>5</b> 매우 그렇다</p>
         ${SUS_ITEMS.map((q, j) => `<div class="q"><div class="qtitle">${j + 1} / 10</div><div class="qtext">${q}</div>
           <div class="likert" data-likert="${j}">${[1, 2, 3, 4, 5].map(v => `<button data-v="${v}">${v}</button>`).join('')}</div>
           <div class="anchors"><span>전혀 그렇지 않다</span><span>매우 그렇다</span></div></div>`).join('')}
@@ -261,7 +262,7 @@ export function createFlowScreen(ctx) {
       const nx = el.querySelector('#next');
       el.querySelectorAll('[data-likert]').forEach(box => bindLikert(box, v => { r[+box.dataset.likert] = v; nx.disabled = r.some(x => x == null); }));
       nx.onclick = () => {
-        ctx.logger.log('sus', { pid: pid(), keyboard: step.keyboard, kbLabel: step.kbLabel, items: r, score: susScore(r) });
+        ctx.logger.log('sus', { pid: pid(), cond: step.cond, keyboard: step.keyboard, hand: step.hand, kbLabel: step.kbLabel, items: r, score: susScore(r) });
         advance();
       };
     },
@@ -289,7 +290,7 @@ export function createFlowScreen(ctx) {
       ctx.logger.log('participant_end', { pid: pid() });
       const mine = ctx.logger.events.filter(e => e.pid === pid());
       const sum = summarizeParticipants(mine)[0];
-      const sus = Object.fromEntries(mine.filter(e => e.ev === 'sus').map(e => [e.kbLabel, e.score]));
+      const sus = Object.fromEntries(mine.filter(e => e.ev === 'sus' && e.cond).map(e => [e.cond, e.score]));
       const xIsCal = ctx.settings.xIs === 'calibrated';
       const rows = ['X', 'Y'].flatMap(lbl => ['bare', 'glove'].map(hand => {
         const kb = (lbl === 'X') === xIsCal ? 'calibrated' : 'baseline';
@@ -297,17 +298,16 @@ export function createFlowScreen(ctx) {
         const c = sum?.conds[cond];
         const acc = c?.shown ? `${((1 - c.shown.keyErrorRate) * 100).toFixed(1)}%` : '–';
         const wpmTxt = c?.wpm != null ? c.wpm.toFixed(1) : '–';
-        return `<tr><td>키보드 ${lbl}</td><td>${handText(hand)}</td><td>${acc}</td><td>${wpmTxt}</td></tr>`;
+        return `<tr><td>키보드 ${lbl}</td><td>${handText(hand)}</td><td>${acc}</td><td>${wpmTxt}</td><td>${sus[cond] ?? '–'}</td></tr>`;
       })).join('');
       el.innerHTML = `<div class="status"><div class="hero">🙏</div><h1>참여해 주셔서<br>감사합니다!</h1>
         <p class="lead">${esc(ctx.participantLabel())} 님의 결과입니다.</p></div>
         <table class="result">
-          <tr><th>키보드</th><th>손</th><th>정확도</th><th>속도 (WPM)</th></tr>${rows}
+          <tr><th>키보드</th><th>손</th><th>정확도</th><th>속도 (WPM)</th><th>SUS</th></tr>${rows}
         </table>
-        <p class="muted small">정확도 = 의도한 글자가 그대로 입력된 비율, WPM = 분당 단어 수(5글자 = 1단어). 참고용 수치입니다.</p>
+        <p class="muted small">정확도 = 의도한 글자가 그대로 입력된 비율, WPM = 분당 단어 수(5글자 = 1단어), SUS = 사용성 점수(0–100). 참고용 수치입니다.</p>
         <div class="card accent">키보드 <b>${xIsCal ? 'X' : 'Y'}</b>는 장갑 상황에 맞춰 터치 위치를 보정하는 <b>새 키보드</b>였고,
-          키보드 <b>${xIsCal ? 'Y' : 'X'}</b>는 보정 없는 <b>기본 키보드</b>였습니다.
-          ${sus.X != null ? `<br>사용성 점수(SUS): X ${sus.X} · Y ${sus.Y}` : ''}</div>
+          키보드 <b>${xIsCal ? 'Y' : 'X'}</b>는 보정 없는 <b>기본 키보드</b>였습니다.</div>
         <h2 class="exp-only">실험자</h2>
         <p class="muted small exp-only">브라우저 저장소는 지워질 수 있으니 참가자마다 바로 내보내세요.</p>
         <div class="exp-only stack end">

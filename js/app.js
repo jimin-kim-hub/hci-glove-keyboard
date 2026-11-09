@@ -1,5 +1,5 @@
 // app.js — state, input pipeline, participant flow vs experimenter tools (화면 전환·상태 관리)
-import { CONDITIONS, LATIN_SQUARE, SIM_PRESETS, SETTINGS_KEY, APP_VERSION } from './config.js';
+import { CONDITIONS, LATIN_SQUARE, SIM_PRESETS, SETTINGS_KEY, APP_VERSION, DEFAULT_MODEL_POLICY } from './config.js';
 import { Keyboard } from './keyboard.js';
 import { Logger } from './logger.js';
 import { decodeBaseline, decodeCalibrated } from './decoder.js';
@@ -17,6 +17,7 @@ const DEFAULT_SETTINGS = {
   pid: 'P00', cond: 'D', mode: 'touch', // 'touch' | 'sim'
   sim: { ...SIM_PRESETS.glove },
   xIs: 'calibrated',
+  modelPolicy: DEFAULT_MODEL_POLICY, // 'auto' | 'M0' | 'M1' — fix one model after the pilot (튜터 피드백 11/9)
 };
 
 function load(key, fallback) {
@@ -68,15 +69,19 @@ const ctx = {
     ctx.saveParticipants();
     settings.pid = pid;
     ctx.saveSettings();
-    logger.log('participant_start', { pid, order, group: order ? (ctx.pnum(pid) - 1) % 4 + 1 : null, mode: settings.mode, xIs: settings.xIs, app: APP_VERSION });
+    logger.log('participant_start', { pid, order, group: order ? (ctx.pnum(pid) - 1) % 4 + 1 : null, mode: settings.mode, xIs: settings.xIs, modelPolicy: settings.modelPolicy, app: APP_VERSION });
   },
 
   // Decode one touch with both decoders; only `shown` reaches the screen (섀도 로깅)
-  decode(touch, { keyboard = ctx.cond().keyboard, model = ctx.entry()?.model ?? null } = {}) {
+  // `alt` = { M0, M1 } from the same calibration: both are decoded for the log only (오프라인 비교용)
+  decode(touch, { keyboard = ctx.cond().keyboard, model = ctx.entry()?.model ?? null, alt = null } = {}) {
     const base = decodeBaseline(touch);
     const cal = model ? decodeCalibrated(model, touch) : null;
     const useCal = keyboard === 'calibrated' && !!cal;
-    return { base, cal: cal?.key ?? null, corrected: cal?.corrected ?? null, shown: useCal ? cal.key : base, applied: useCal ? 'calibrated' : 'baseline' };
+    return {
+      base, cal: cal?.key ?? null, corrected: cal?.corrected ?? null, shown: useCal ? cal.key : base, applied: useCal ? 'calibrated' : 'baseline',
+      m0: alt?.M0 ? decodeCalibrated(alt.M0, touch).key : null, m1: alt?.M1 ? decodeCalibrated(alt.M1, touch).key : null,
+    };
   },
 
   // Standard touch event (계획 PDF B7 스키마); `extra` may override pid/cond/phase
@@ -89,7 +94,7 @@ const ctx = {
       x: r1(input.touch.x * u), y: r1(input.touch.y * u), ux: r3(input.touch.x), uy: r3(input.touch.y),
       rx: input.raw.rx, ry: input.raw.ry, force: input.raw.force,
       sim: input.sim, aimUx: input.aim ? r3(input.aim.x) : null, aimUy: input.aim ? r3(input.aim.y) : null,
-      keyBase: dec.base, keyCal: dec.cal, keyShown: dec.shown, applied: dec.applied, ...extra,
+      keyBase: dec.base, keyCal: dec.cal, keyM0: dec.m0 ?? null, keyM1: dec.m1 ?? null, keyShown: dec.shown, applied: dec.applied, ...extra,
     });
   },
 };

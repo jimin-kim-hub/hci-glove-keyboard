@@ -99,8 +99,8 @@ export function createSummaryScreen(ctx) {
       <p class="muted small">섀도 로깅(화면에 반영되지 않은 쪽도 함께 기록) 재계산입니다. 화면에 보인 글자에 따라 사람이 반응한 효과는 빠져 있습니다.</p>
 
       <h2>설문</h2>
-      ${table(['조건', 'NASA-TLX (0–100)', '불편도 (1–7)'], d.conds.map(c => `<tr>${condCell(c)}<td>${c.tlx == null ? '–' : c.tlx.toFixed(1)}</td><td>${c.discomfort ?? '–'}</td></tr>`).join(''))}
-      <div class="card small">SUS(사용성 점수): 보정 키보드 <b>${d.sus.calibrated ?? '–'}</b> · 기본 키보드 <b>${d.sus.baseline ?? '–'}</b><br>
+      ${table(['조건', 'NASA-TLX (0–100)', '불편도 (1–7)', 'SUS (0–100)'], d.conds.map(c => `<tr>${condCell(c)}<td>${c.tlx == null ? '–' : c.tlx.toFixed(1)}</td><td>${c.discomfort ?? '–'}</td><td>${c.sus ?? '–'}</td></tr>`).join(''))}
+      <div class="card small">SUS 평균: 보정 키보드 <b>${d.sus.calibrated ?? '–'}</b> · 기본 키보드 <b>${d.sus.baseline ?? '–'}</b><br>
         더 좋았던 키보드: 장갑 <b>${kbText(d.preference?.glove)}</b> · 맨손 <b>${kbText(d.preference?.bare)}</b></div>
 
       <h2>이 참가자만 내보내기</h2>

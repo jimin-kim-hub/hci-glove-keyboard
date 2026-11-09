@@ -5,7 +5,7 @@ import { intendedKeyAt, classifyKeystroke, summarizeKeystrokes, wpm, msdErrorRat
 
 const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
-export function runTyping(ctx, host, { phrases, keyboard, model, logFields, onDone }) {
+export function runTyping(ctx, host, { phrases, keyboard, model, alt = null, logFields, onDone }) {
   let idx = 0, typed = '', keys = [], tStart = null;
   const results = [];
   host.innerHTML = `
@@ -40,7 +40,7 @@ export function runTyping(ctx, host, { phrases, keyboard, model, logFields, onDo
   return {
     onTap(input) {
       if (idx >= phrases.length) return;
-      const dec = ctx.decode(input.touch, { keyboard, model });
+      const dec = ctx.decode(input.touch, { keyboard, model, alt });
       const intended = intendedKeyAt(phrases[idx], typed.length);
       ctx.logTouch(input, dec, {
         ...logFields, trial: idx, intended, textLen: typed.length,

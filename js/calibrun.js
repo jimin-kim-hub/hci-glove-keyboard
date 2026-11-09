@@ -30,14 +30,14 @@ export function runCalibration(ctx, host, { logFields, onDone }) {
 
   function finish(sim) {
     const durationS = startT ? (performance.now() - startT) / 1000 : null;
-    const { model, report } = fitCalibration(taps);
+    const { model, alt, report } = fitCalibration(taps, ctx.settings.modelPolicy);
     ctx.kb.setTarget(null);
     ctx.logger.log('model_fit', {
-      ...logFields, model: model.type, n: report.nUsed, nTotal: report.nTotal,
-      loo_acc: report.chosen === 'M1' ? Math.max(...report.m1.map(r => r.acc)) : report.m0.acc,
-      baseline_acc: report.baseline.acc, reason: report.reason, params: model, durationS, sim,
+      ...logFields, model: model.type, policy: report.policy, auto: report.auto, n: report.nUsed, nTotal: report.nTotal,
+      loo_acc: report.looAcc, loo_acc_m0: report.m0.acc, loo_acc_m1: report.m1.find(r => r.lambda === report.m1Lambda)?.acc ?? null,
+      baseline_acc: report.baseline.acc, reason: report.reason, params: model, params_m0: alt.M0, params_m1: alt.M1, durationS, sim,
     });
-    onDone({ model, report, taps, durationS, sim, at: new Date().toISOString() });
+    onDone({ model, alt, report, taps, durationS, sim, at: new Date().toISOString() });
   }
 
   return {

@@ -117,36 +117,57 @@ export function looBaseline(rs) {
 }
 
 // ---- Full fit with model selection (모델 학습 + 선택) ----
-// taps: [{x, y, target}] in key units. Returns a frozen model plus a report.
-export function fitCalibration(taps) {
+// taps: [{x, y, target}] in key units. policy: 'auto' (LOO choice) | 'M0' | 'M1' (fixed for every participant).
+// Both models are always fitted and returned in `alt` for shadow logging (두 모델 모두 섀도 로깅).
+export const MODEL_POLICIES = ['auto', 'M0', 'M1'];
+
+export function fitCalibration(taps, policy = 'auto') {
+  if (!MODEL_POLICIES.includes(policy)) policy = 'auto';
   const all = residuals(taps);
   const rs = removeOutliers(all);
   const report = {
-    nTotal: all.length, nUsed: rs.length, nOutliers: all.length - rs.length,
-    baseline: looBaseline(rs), m0: null, m1: [], chosen: null, reason: '',
+    nTotal: all.length, nUsed: rs.length, nOutliers: all.length - rs.length, policy,
+    baseline: looBaseline(rs), m0: null, m1: [], m1Lambda: null, auto: null, chosen: null, reason: '',
   };
-  report.m0 = looEvaluate(rs, 'M0');
-  if (rs.length < CALIB.minTapsForM1) {
-    report.chosen = 'M0';
-    report.reason = `사용 가능한 탭이 ${rs.length}개로 ${CALIB.minTapsForM1}개 미만이라 M0로 폴백`;
-    return Object.freeze({ model: Object.freeze(fitM0(rs)), report });
-  }
-  let best = null;
-  for (const lambda of CALIB.lambdas) {
-    const ev = looEvaluate(rs, 'M1', lambda);
-    report.m1.push({ lambda, ...ev });
-    // ties go to the larger lambda (simpler model)
-    if (!best || ev.acc >= best.acc) best = { lambda, ...ev };
-  }
   const pct = v => (v * 100).toFixed(1) + '%';
-  if (best.acc > report.m0.acc) {
-    report.chosen = 'M1';
-    report.reason = `LOO 키 정확도 M1(λ=${best.lambda}) ${pct(best.acc)} > M0 ${pct(report.m0.acc)}`;
-    return Object.freeze({ model: Object.freeze(fitM1(rs, best.lambda)), report });
+  report.m0 = looEvaluate(rs, 'M0');
+  const m0 = Object.freeze(fitM0(rs));
+  let m1 = null, best = null;
+  if (rs.length >= CALIB.minTapsForM1) {
+    for (const lambda of CALIB.lambdas) {
+      const ev = looEvaluate(rs, 'M1', lambda);
+      report.m1.push({ lambda, ...ev });
+      // ties go to the larger lambda (simpler model)
+      if (!best || ev.acc >= best.acc) best = { lambda, ...ev };
+    }
+    report.m1Lambda = best.lambda;
+    m1 = Object.freeze(fitM1(rs, best.lambda));
   }
-  report.chosen = 'M0';
-  report.reason = best.acc === report.m0.acc
-    ? `LOO 키 정확도 동률(${pct(best.acc)}) → 규칙상 단순한 M0`
-    : `LOO 키 정확도 M0 ${pct(report.m0.acc)} > M1(λ=${best.lambda}) ${pct(best.acc)}`;
-  return Object.freeze({ model: Object.freeze(fitM0(rs)), report });
+  // What the LOO rule would pick (ties → M0)
+  let autoReason;
+  if (!m1) {
+    report.auto = 'M0';
+    autoReason = `사용 가능한 탭이 ${rs.length}개로 ${CALIB.minTapsForM1}개 미만이라 M0로 폴백`;
+  } else if (best.acc > report.m0.acc) {
+    report.auto = 'M1';
+    autoReason = `LOO 키 정확도 M1(λ=${best.lambda}) ${pct(best.acc)} > M0 ${pct(report.m0.acc)}`;
+  } else {
+    report.auto = 'M0';
+    autoReason = best.acc === report.m0.acc
+      ? `LOO 키 정확도 동률(${pct(best.acc)}) → 규칙상 단순한 M0`
+      : `LOO 키 정확도 M0 ${pct(report.m0.acc)} > M1(λ=${best.lambda}) ${pct(best.acc)}`;
+  }
+  if (policy === 'auto') {
+    report.chosen = report.auto;
+    report.reason = autoReason;
+  } else if (policy === 'M1' && !m1) {
+    report.chosen = 'M0';
+    report.reason = `M1 고정이지만 ${autoReason}`;
+  } else {
+    report.chosen = policy;
+    report.reason = `${policy} 고정 설정 (자동이었다면 ${report.auto})`;
+  }
+  report.looAcc = report.chosen === 'M1' ? best.acc : report.m0.acc;
+  const model = report.chosen === 'M1' ? m1 : m0;
+  return Object.freeze({ model, alt: Object.freeze({ M0: m0, M1: m1 }), report });
 }

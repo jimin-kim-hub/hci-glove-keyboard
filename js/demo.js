@@ -103,7 +103,7 @@ export function createDemoScreen(ctx) {
   $('hand').onchange = refresh;
   $('quick').onclick = () => {
     const taps = simulateCalibration(ctx.simParams(hand()), Math.floor(Math.random() * 1e9));
-    const { model, report } = fitCalibration(taps);
+    const { model, report } = fitCalibration(taps, ctx.settings.modelPolicy);
     ctx.logger.log('model_fit', { pid: DEMO_PID, cond: key(), phase: 'demo', model: model.type, reason: report.reason, params: model, sim: true, auto: true });
     setModel({ model, report, taps, sim: true, at: new Date().toISOString() });
   };

@@ -11,11 +11,11 @@ HCI 팀 프로젝트(Type 2 + 2요인 add-on). 같은 키보드 모양에서 **�
 
 1. 폰에서 위 주소를 연다. (권장: 공유 → 홈 화면에 추가 → 전체 화면으로 실행)
 2. 참가자가 **별명**을 입력하고 **시작하기**. 참가자 번호(P01, P02 …)는 자동으로 배정된다.
-3. 화면 안내대로 끝까지 진행한다. 총 29단계, 약 40분:
+3. 화면 안내대로 끝까지 진행한다. 총 31단계, 약 40분:
    - 실험 안내 (실험자가 동의서 확인 체크)
    - 연습: 맨손 준비 단계(노란 키 43개) → 키보드 X 문장 3개 → 키보드 Y 문장 3개
-   - 조건 4개 (참가자 번호에 따라 순서가 정해짐), 조건마다: 장갑 끼기/벗기 안내 → 준비 단계 → 문장 8개 → 설문(NASA-TLX 6문항 + 불편도) → 휴식
-   - 마무리: 키보드 X, Y 사용성 설문(SUS) → 선호도 → **결과**
+   - 조건 4개 (참가자 번호에 따라 순서가 정해짐), 조건마다: 장갑 끼기/벗기 안내 → 준비 단계 → 문장 8개 → 설문(NASA-TLX 6문항 + 불편도) → 사용성 설문(SUS 10문항) → 휴식
+   - 마무리: 선호도 → **결과** (인터뷰는 실험자가 이어서 진행)
 4. 결과 화면에서 **이 참가자 기록 내보내기**로 백업하고 **다음 참가자 시작**.
 
 중간에 앱이 꺼져도 시작 화면의 **이어서 하기**로 그 단계부터 다시 한다. 단, 끊긴 단계는 처음부터 다시 진행된다.
@@ -27,7 +27,7 @@ HCI 팀 프로젝트(Type 2 + 2요인 add-on). 같은 키보드 모양에서 **�
 | 종합 | 참가자별 결과(입력 결과, 터치 어긋남, 설문)와 개인 기록 내보내기(CSV 요약, JSONL 원본), 전체 참가자 × 조건 표, 전체 기록 내보내기, 다른 기기 기록 합치기 |
 | 시연 | 발표용 "같은 터치, 다른 판정" 화면. 장갑/맨손 보정을 직접 하거나 시뮬레이션으로 자동 보정 |
 | 탭 재생 | 내보낸 기록의 보정 탭을 불러와 기본 vs 보정(LOO) 정확도 비교 |
-| 설정 | 입력 모드(실기기 터치 / 시뮬레이션), 합성 쏠림 슬라이더, X/Y 라벨, 단계 이동, 초기화 |
+| 설정 | 입력 모드(실기기 터치 / 시뮬레이션), 합성 쏠림 슬라이더, 보정 모델(자동 / M0 고정 / M1 고정), X/Y 라벨, 단계 이동, 초기화 |
 
 시뮬레이션 모드에서는 마우스 클릭에 **가정한 장갑 쏠림**을 더한다(실제 데이터 아님). 이때 화면 위에 "시뮬레이션" 표시가 항상 붙는다.
 
@@ -68,20 +68,23 @@ js/logger.js       JSONL 기록 (IndexedDB 저장, 병합, 다운로드)
 js/aggregate.js    참가자 × 조건 종합, 중복 제거
 js/participant.js  참가자 1명의 결과 계산, CSV 변환
 js/viz.js          탭 점·화살표·오프셋 필드
-data/phrases.json  문구 샘플 (공식 세트로 교체 예정)
+data/phrases.json  문구 세트: 조건별 다른 8문장 × 4세트 + 연습 6문장 (공식 목록에서 생성)
+js/phrasestats.js  문장 길이·난이도 특징 (단어 길이, 글자 희귀도, 키 이동 거리)
+tools/make_sets.mjs  phrases.json 생성 스크립트 (seed 고정, 공식 phrases2.txt 필요)
 tests/             Node 내장 테스트 러너
 ```
 
 ## 로그 (JSON Lines)
 
-주요 이벤트: `session_start`, `participant_start`, `flow_step`, `flow_exit`(나가기), `typing_start`(문장 입력 시작, 재시작 구분용), `consent_confirmed`, `layout`(키 사각형 px), `calib_tap`, `model_fit`, `touch`(두 판정 결과 `keyBase`/`keyCal`과 실제 반영 `keyShown`/`applied`, 의도 키 `intended`), `trial_end`, `survey`(TLX·불편도), `sus`, `preference`, `participant_end`, `settings`.
+주요 이벤트: `session_start`, `participant_start`, `flow_step`, `flow_exit`(나가기), `typing_start`(문장 입력 시작, 재시작 구분용), `consent_confirmed`, `layout`(키 사각형 px), `calib_tap`, `model_fit`(선택 규칙 `policy`, 자동이었다면 고를 모델 `auto`, 두 모델의 LOO 정확도와 계수), `touch`(두 판정 결과 `keyBase`/`keyCal`, 같은 보정 데이터의 M0·M1 판정 `keyM0`/`keyM1`, 실제 반영 `keyShown`/`applied`, 의도 키 `intended`), `trial_end`, `survey`(TLX·불편도), `sus`(조건마다, `cond` 포함), `preference`, `participant_end`, `settings`.
 좌표는 키보드 기준 CSS px(`x`, `y`)와 키 단위(`ux`, `uy`, 1 = 가로 키 간격)를 함께 저장한다. 지표는 분석 스크립트가 원본에서 다시 계산한다.
 
 ## 아직 안 된 것
 
 - 설문 문항의 한국어는 팀 번역 초안이다. 검증된 한국어판 NASA-TLX·SUS와 대조해야 한다.
 - 실제 폰·장갑에서의 확인 (touch radius/force 값, 가장자리 제스처, 지연)
-- `data/phrases.json`은 기억에 의존한 샘플이다. 공식 MacKenzie & Soukoreff 세트와 대조하고 `make_sets.py`로 다시 만들어야 한다.
+- 문장 세트는 공식 MacKenzie & Soukoreff `phrases2.txt`(https://www.yorku.ca/mack/PhraseSets.zip)에서 `node tools/make_sets.mjs phrases2.txt > data/phrases.json`으로 만든다. 4세트의 k번째 문장은 글자 수가 같고 난이도(단어 길이·글자 희귀도·키 이동 거리)가 비슷하다. 난이도 지표는 팀이 정한 근사치다.
+- 보정 모델 기본값은 자동 선택(`DEFAULT_MODEL_POLICY = 'auto'`)이다. 파일럿 뒤 M0 또는 M1 하나로 정해 `js/config.js`에서 바꾸고 사양을 동결한다.
 - Python 분석 스크립트(`analysis/`)
 
 ## 저장소 범위
