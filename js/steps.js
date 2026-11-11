@@ -9,7 +9,7 @@ export const TRIALS_PER_COND = 8;
 export function buildSteps(order, xIs = 'calibrated') {
   const label = kb => (kb === xIs ? 'X' : 'Y');
   const keyboards = xIs === 'calibrated' ? ['calibrated', 'baseline'] : ['baseline', 'calibrated'];
-  const steps = [{ type: 'intro', title: '실험 안내' }];
+  const steps = [{ type: 'intro', title: '실험 안내' }, { type: 'demo', title: '기본 정보' }];
 
   // Practice (bare hands): one practice calibration, then 3 phrases per keyboard (X then Y)
   steps.push({ type: 'hand', hand: 'bare', title: '연습 준비', practice: true });

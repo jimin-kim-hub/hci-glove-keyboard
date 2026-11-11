@@ -4,7 +4,7 @@ import { COND_INDEX, CONDITIONS } from './config.js';
 import { buildSteps } from './steps.js';
 import { runCalibration } from './calibrun.js';
 import { runTyping } from './typerun.js';
-import { TLX_ITEMS, DISCOMFORT, SUS_ITEMS, susScore, tlxRaw } from './surveys.js';
+import { TLX_ITEMS, DISCOMFORT, SUS_ITEMS, DEMOGRAPHICS, susScore, tlxRaw } from './surveys.js';
 import { summarizeParticipants, nextParticipantId } from './aggregate.js';
 
 const FLOW_KEY = 'glovekb.flow.v1'; // { pid: { step, done } }
@@ -154,6 +154,25 @@ export function createFlowScreen(ctx) {
       const cb = el.querySelector('#consent'), nx = el.querySelector('#next');
       cb.onchange = () => { nx.disabled = !cb.checked; };
       nx.onclick = () => { ctx.logger.log('consent_confirmed', { pid: pid() }); advance(); };
+    },
+
+    demo() {
+      el.innerHTML = `<p class="eyebrow">시작 전에</p><h1>간단한 질문 몇 가지</h1>
+        <p class="lead">이름이나 연락처는 묻지 않습니다. 답은 참가자 번호로만 기록됩니다.</p>
+        ${DEMOGRAPHICS.map(d => `<div class="q${d.exp ? ' exp-only' : ''}"><div class="qtext">${d.q}</div>
+          <div class="likert${d.options.length > 3 && !d.anchors ? ' grid' : ''}" data-likert="${d.key}">${d.options.map(([v, l]) => `<button data-v="${v}">${l}</button>`).join('')}</div>
+          ${d.anchors ? `<div class="anchors"><span>${d.anchors[0]}</span><span>${d.anchors[1]}</span></div>` : ''}</div>`).join('')}
+        ${cta('다음', { disabled: true })}`;
+      const ans = {};
+      const nx = el.querySelector('#next');
+      el.querySelectorAll('[data-likert]').forEach(box => bindLikert(box, v => {
+        ans[box.dataset.likert] = String(v);
+        nx.disabled = DEMOGRAPHICS.some(d => ans[d.key] == null);
+      }));
+      nx.onclick = () => {
+        ctx.logger.log('demographics', { pid: pid(), ...ans, englishFreq: +ans.englishFreq });
+        advance();
+      };
     },
 
     hand(step) {

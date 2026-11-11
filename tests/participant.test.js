@@ -35,6 +35,7 @@ test('restarts, surveys and SUS appear in the detail and the CSV', () => {
     { ...base, ev: 'survey', cond: 'D', tlxRaw: 42.5, discomfort: 3 },
     { ...base, ev: 'sus', keyboard: 'calibrated', score: 75 },
     { ...base, ev: 'preference', gloveKeyboard: 'calibrated', bareKeyboard: 'same' },
+    { ...base, ev: 'demographics', age: '20-24', hand: 'right', englishFreq: 3, style: 'two-thumbs', glove: 'women' },
     { ...base, ev: 'participant_end' },
   ], 'P01');
   const D = d.conds.find(c => c.cond === 'D');
@@ -49,4 +50,7 @@ test('restarts, surveys and SUS appear in the detail and the CSV', () => {
   assert.equal(row[cols.indexOf('tlx_raw')], '42.5');
   assert.equal(row[cols.indexOf('sus')], '75');
   assert.equal(row[cols.indexOf('pref_bare')], 'same');
+  assert.equal(row[cols.indexOf('age')], '20-24');
+  assert.equal(row[cols.indexOf('english_freq')], '3');
+  assert.equal(row[cols.indexOf('glove_type')], 'women');
 });

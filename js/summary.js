@@ -1,5 +1,6 @@
 // summary.js — experimenter view: participant list → one participant's results, plus the overall table
 // (실험자: 참가자 목록 → 개인 결과·내보내기, 전체 종합표, 다른 기기 로그 합치기)
+import { DEMOGRAPHICS } from './surveys.js';
 import { CONDITIONS } from './config.js';
 import { summarizeParticipants } from './aggregate.js';
 import { participantDetail, detailToCsv } from './participant.js';
@@ -83,6 +84,7 @@ export function createSummaryScreen(ctx) {
       <p class="eyebrow" style="margin-top:16px">${d.finished ? '실험 완료' : '진행 중 또는 중단'}</p>
       <h1>${esc(ctx.participantLabel(selected))}</h1>
       <p class="lead">조건 순서 ${d.order ? d.order.split('').join(' → ') : '–'} · 키보드 터치 ${d.touches}회 기록</p>
+      ${d.demographics ? `<p class="muted small">기본 정보: ${DEMOGRAPHICS.map(q => esc(q.options.find(([v]) => v === String(d.demographics[q.key]))?.[1] ?? '–') + (q.key === 'englishFreq' ? '/5 (영어 입력 빈도)' : '')).join(' · ')}</p>` : ''}
       ${d.sim ? '<span class="tag sim">시뮬레이션 입력 포함(실제 데이터 아님)</span>' : ''}
       ${restarts.length ? `<div class="card warn small">다시 시작한 조건: ${restarts.map(c => `${c.cond} (${c.restarts}회)`).join(', ')}. 표는 마지막 시도만 집계합니다. 같은 문장을 다시 입력했으므로 연습 효과가 있을 수 있습니다.</div>` : ''}
 

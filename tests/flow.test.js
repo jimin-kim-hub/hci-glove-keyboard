@@ -15,6 +15,8 @@ test('steps follow the Latin-square order with calib → 8 phrases → TLX → S
   }
   assert.equal(steps.filter(s => s.type === 'rest').length, 3);
   assert.equal(steps[0].type, 'intro');
+  assert.equal(steps[1].type, 'demo'); // background questions right after consent
+  assert.equal(steps.length, 32);
   assert.equal(steps.at(-1).type, 'results');
 });
 

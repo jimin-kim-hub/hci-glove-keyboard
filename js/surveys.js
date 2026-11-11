@@ -12,6 +12,16 @@ export const TLX_ITEMS = [
   { key: 'frustration', name: '좌절', q: '얼마나 짜증·불안·스트레스를 느꼈나요?', lo: '매우 낮음', hi: '매우 높음' },
 ];
 
+// Participant background (참가자 기본 정보) — no name/contact; linked to the participant number only.
+// `exp: true` items are answered by the experimenter. Glove size is not asked (free-size gloves).
+export const DEMOGRAPHICS = [
+  { key: 'age', q: '나이대를 골라 주세요.', options: [['~19', '19세 이하'], ['20-24', '20–24세'], ['25-29', '25–29세'], ['30-39', '30대'], ['40-49', '40대'], ['50+', '50세 이상']] },
+  { key: 'hand', q: '주로 쓰는 손은 어느 쪽인가요?', options: [['right', '오른손'], ['left', '왼손'], ['both', '양손 모두']] },
+  { key: 'englishFreq', q: '휴대폰으로 영어를 얼마나 자주 입력하나요?', options: [['1', '1'], ['2', '2'], ['3', '3'], ['4', '4'], ['5', '5']], anchors: ['거의 안 함', '매일'] },
+  { key: 'style', q: '평소 휴대폰 글자 입력은 주로 어떻게 하나요?', options: [['two-thumbs', '양손 엄지'], ['one-thumb', '한 손 엄지'], ['finger', '검지 등 한 손가락'], ['other', '기타']] },
+  { key: 'glove', q: '실험자: 이 참가자가 쓸 장갑', exp: true, options: [['women', '여성용'], ['men', '남성용']] },
+];
+
 export const DISCOMFORT = { q: '화면을 누르기 불편했다.', lo: '전혀 아니다', hi: '매우 그렇다', max: 7 };
 
 // System Usability Scale (Brooke 1996), 1 = 전혀 그렇지 않다 … 5 = 매우 그렇다

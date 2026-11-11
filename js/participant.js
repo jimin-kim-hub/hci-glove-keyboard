@@ -49,6 +49,7 @@ export function participantDetail(events, pid) {
     };
   });
   const pref = last('preference');
+  const demo = last('demographics');
   return {
     pid,
     order: last('participant_start')?.order ?? null,
@@ -62,13 +63,14 @@ export function participantDetail(events, pid) {
       return [kb, xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : last('sus', e => e.keyboard === kb && !e.cond)?.score ?? null];
     })),
     preference: pref && { glove: pref.gloveKeyboard, bare: pref.bareKeyboard },
+    demographics: demo && { age: demo.age, hand: demo.hand, englishFreq: demo.englishFreq, style: demo.style, glove: demo.glove },
   };
 }
 
 const CSV_COLUMNS = [
   'pid', 'cond', 'keyboard', 'hand', 'trials', 'restarts', 'accuracy', 'key_error_rate', 'neighbor_error_rate', 'wpm', 'backspaces',
   'shadow_base_neighbor_error_rate', 'shadow_cal_neighbor_error_rate', 'calib_model', 'calib_baseline_acc', 'calib_loo_acc', 'calib_seconds',
-  'calib_offset_dx', 'calib_offset_dy', 'tlx_raw', 'discomfort', 'sus', 'pref_glove', 'pref_bare', 'includes_simulation',
+  'calib_offset_dx', 'calib_offset_dy', 'tlx_raw', 'discomfort', 'sus', 'pref_glove', 'pref_bare', 'age', 'main_hand', 'english_freq', 'typing_style', 'glove_type', 'includes_simulation',
 ];
 const num = (v, d = 4) => (v == null ? '' : +v.toFixed(d));
 
@@ -78,7 +80,9 @@ export function detailToCsv(d) {
     c.shown ? num(1 - c.shown.keyErrorRate) : '', num(c.shown?.keyErrorRate), num(c.shown?.neighborErrorRate), num(c.wpm, 2), c.shown?.backspaces ?? '',
     num(c.base?.neighborErrorRate), num(c.cal?.neighborErrorRate), c.fit?.model ?? '', num(c.fit?.baselineAcc), num(c.fit?.looAcc), num(c.fit?.seconds, 1),
     num(c.offset?.dx, 3), num(c.offset?.dy, 3), num(c.tlx, 1), c.discomfort ?? '', c.sus ?? d.sus[c.keyboard] ?? '',
-    d.preference?.glove ?? '', d.preference?.bare ?? '', d.sim ? 1 : 0,
+    d.preference?.glove ?? '', d.preference?.bare ?? '',
+    d.demographics?.age ?? '', d.demographics?.hand ?? '', d.demographics?.englishFreq ?? '', d.demographics?.style ?? '', d.demographics?.glove ?? '',
+    d.sim ? 1 : 0,
   ].join(','));
   return [CSV_COLUMNS.join(','), ...rows].join('\n') + '\n';
 }
