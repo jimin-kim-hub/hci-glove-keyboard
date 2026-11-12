@@ -44,7 +44,7 @@ export function createSummaryScreen(ctx) {
       <p class="muted small">여러 폰으로 진행했다면, 각 폰에서 <b>전체 기록 내보내기</b>를 한 뒤 한 기기에서 <b>다른 기기 기록 합치기</b>로 불러오세요. 같은 기록은 한 번만 들어갑니다.</p>
       <div class="stack">
         <button class="primary big" data-r="exportAll">전체 기록 내보내기 (JSONL)</button>
-        <label class="file-btn big">다른 기기 기록 합치기<input type="file" accept=".jsonl,.json,.txt" multiple data-r="file" hidden></label>
+        <label class="file-btn big">다른 기기 기록 합치기<input type="file" multiple data-r="file" hidden></label>
       </div>
       <p data-r="msg"></p>
     </div>
@@ -125,11 +125,15 @@ export function createSummaryScreen(ctx) {
   $('exportAll').onclick = async () => { await ctx.logger.flush(); ctx.logger.export(); };
   $('file').onchange = async (e) => {
     let added = 0, skipped = 0;
+    const bad = [];
     for (const f of e.target.files) {
-      const r = await ctx.logger.importEvents(parseJSONL(await f.text()));
+      const evs = parseJSONL(await f.text());
+      if (!evs.length) { bad.push(f.name); continue; }
+      const r = await ctx.logger.importEvents(evs);
       added += r.added; skipped += r.skipped;
     }
-    $('msg').textContent = `${e.target.files.length}개 파일: 기록 ${added}개 추가, 중복 ${skipped}개 건너뜀.`;
+    $('msg').textContent = `${e.target.files.length}개 파일: 기록 ${added}개 추가, 중복 ${skipped}개 건너뜀.`
+      + (bad.length ? ` 실험 기록이 아닌 파일 ${bad.length}개는 무시했습니다 (${bad.join(', ')}).` : '');
     e.target.value = '';
     render();
   };

@@ -19,6 +19,7 @@ export function buildSteps(order, xIs = 'calibrated') {
     modelKey: 'practice', phraseFrom: j * PRACTICE_PER_KEYBOARD, count: PRACTICE_PER_KEYBOARD, title: `연습: 키보드 ${label(kb)}`,
   }));
 
+  const seen = { bare: [], glove: [] }; // conditions done so far per hand state (손 상태별 진행한 조건)
   [...order].forEach((cond, i) => {
     const c = CONDITIONS[cond];
     const kbl = label(c.keyboard);
@@ -29,11 +30,14 @@ export function buildSteps(order, xIs = 'calibrated') {
     // Tutor feedback 11/9: TLX·discomfort and SUS right after each condition (조건 직후 바로 설문)
     steps.push({ ...base, type: 'tlx', title: `조건 ${i + 1}/4 · 설문` });
     steps.push({ ...base, type: 'sus', title: `조건 ${i + 1}/4 · 사용성 설문` });
+    // Pilot 11/12: asking X vs Y only at the very end relied on memory (~20 min back).
+    // Ask as soon as both keyboards have been used in this hand state. (같은 손 상태로 X·Y를 다 써 본 직후 비교 질문)
+    seen[c.hand].push({ cond, kbLabel: kbl, block: i + 1 });
+    if (seen[c.hand].length === 2) steps.push({ type: 'pref', hand: c.hand, blocks: [...seen[c.hand]], title: '키보드 비교' });
     if (i < order.length - 1) steps.push({ ...base, type: 'rest', title: '휴식' });
   });
 
   steps.push({ type: 'hand', hand: 'bare', title: '마무리 준비', final: true });
-  steps.push({ type: 'pref', title: '선호도' });
   steps.push({ type: 'results', title: '결과' });
   return steps;
 }

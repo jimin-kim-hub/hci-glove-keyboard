@@ -48,7 +48,10 @@ export function participantDetail(events, pid) {
       discomfort: survey?.discomfort ?? null,
     };
   });
-  const pref = last('preference');
+  // v0.9+: one preference event per hand state ({hand, keyboard}); older logs: one event with gloveKeyboard/bareKeyboard
+  const prefOld = last('preference', e => !e.hand);
+  const prefOf = hand => last('preference', e => e.hand === hand)?.keyboard ?? prefOld?.[`${hand}Keyboard`] ?? null;
+  const hasPref = mine.some(e => e.ev === 'preference');
   const demo = last('demographics');
   return {
     pid,
@@ -62,7 +65,7 @@ export function participantDetail(events, pid) {
       const xs = conds.filter(c => c.keyboard === kb && c.sus != null).map(c => c.sus);
       return [kb, xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : last('sus', e => e.keyboard === kb && !e.cond)?.score ?? null];
     })),
-    preference: pref && { glove: pref.gloveKeyboard, bare: pref.bareKeyboard },
+    preference: hasPref ? { glove: prefOf('glove'), bare: prefOf('bare') } : null,
     demographics: demo && { age: demo.age, hand: demo.hand, englishFreq: demo.englishFreq, style: demo.style, glove: demo.glove },
   };
 }

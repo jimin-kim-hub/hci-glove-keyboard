@@ -183,7 +183,7 @@ export function createFlowScreen(ctx) {
           <ol class="steps-list"><li>노란 키 차례로 누르기 (연습)</li><li>키보드 X로 문장 3개</li><li>키보드 Y로 문장 3개</li></ol>`;
       } else if (step.final) {
         body = `<div class="hero">🎉</div><h1>입력 과제가 모두 끝났습니다</h1>
-          <p class="lead">장갑을 벗어 주세요. 마지막으로 어느 키보드가 더 좋았는지 묻는 질문이 남았습니다.</p>`;
+          <p class="lead">장갑을 벗어 주세요. 다음 화면에서 결과를 보여 드립니다.</p>`;
       } else {
         const glove = step.hand === 'glove';
         body = `<div class="hero">${glove ? '🧤' : '✋'}</div>
@@ -286,18 +286,23 @@ export function createFlowScreen(ctx) {
       };
     },
 
-    pref() {
-      const qs = [['glove', '장갑을 꼈을 때 어느 키보드가 더 좋았나요?'], ['bare', '맨손일 때 어느 키보드가 더 좋았나요?']];
-      el.innerHTML = `<p class="eyebrow">마지막 질문</p><h1>어느 키보드가 더 좋았나요?</h1>
-        ${qs.map(([k, q]) => `<div class="q"><div class="qtext">${q}</div>
-          <div class="likert wide" data-likert="${k}"><button data-v="X">X</button><button data-v="same">비슷함</button><button data-v="Y">Y</button></div></div>`).join('')}
-        ${cta('결과 보기', { disabled: true })}`;
-      const ans = {};
+    pref(step) {
+      // One hand state at a time, right after both keyboards were used in it (손 상태별, 두 키보드를 다 쓴 직후)
+      const glove = step.hand === 'glove';
+      const order = ['첫 번째', '두 번째', '세 번째', '네 번째'];
+      const reminder = (step.blocks ?? []).map(b => `<li><b class="kb-tag">${b.kbLabel}</b> — ${order[b.block - 1] ?? `${b.block}번째`} 조건 (${handText(step.hand)})</li>`).join('');
+      el.innerHTML = `<p class="eyebrow">키보드 비교 · ${handText(step.hand)}</p>
+        <h1>${glove ? '장갑을 꼈을 때' : '맨손일 때'}<br>어느 키보드가 더 좋았나요?</h1>
+        <p class="lead">방금까지 ${glove ? '장갑을 끼고' : '맨손으로'} 두 키보드를 모두 써 봤습니다.</p>
+        <ol class="steps-list">${reminder}</ol>
+        <div class="q"><div class="likert wide" data-likert="choice"><button data-v="X">X</button><button data-v="same">비슷함</button><button data-v="Y">Y</button></div></div>
+        ${cta('다음', { disabled: true })}`;
+      let choice = null;
       const nx = el.querySelector('#next');
-      el.querySelectorAll('[data-likert]').forEach(box => bindLikert(box, v => { ans[box.dataset.likert] = v; nx.disabled = Object.keys(ans).length < 2; }));
+      bindLikert(el.querySelector('[data-likert]'), v => { choice = v; nx.disabled = false; });
       nx.onclick = () => {
-        const toKb = v => (v === 'same' ? 'same' : v === 'X' ? ctx.settings.xIs : (ctx.settings.xIs === 'calibrated' ? 'baseline' : 'calibrated'));
-        ctx.logger.log('preference', { pid: pid(), glove: ans.glove, bare: ans.bare, gloveKeyboard: toKb(ans.glove), bareKeyboard: toKb(ans.bare) });
+        const kb = choice === 'same' ? 'same' : (choice === 'X') === (ctx.settings.xIs === 'calibrated') ? 'calibrated' : 'baseline';
+        ctx.logger.log('preference', { pid: pid(), hand: step.hand, choice, keyboard: kb, blocks: (step.blocks ?? []).map(b => b.cond) });
         advance();
       };
     },

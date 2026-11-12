@@ -11,13 +11,15 @@ HCI 팀 프로젝트(Type 2 + 2요인 add-on). 같은 키보드 모양에서 **�
 
 1. 폰에서 위 주소를 연다. (권장: 공유 → 홈 화면에 추가 → 전체 화면으로 실행)
 2. 참가자가 **별명**을 입력하고 **시작하기**. 참가자 번호(P01, P02 …)는 자동으로 배정된다.
-3. 화면 안내대로 끝까지 진행한다. 총 32단계, 약 40분:
+3. 화면 안내대로 끝까지 진행한다. 총 33단계, 약 40분:
    - 실험 안내 (실험자가 동의서 확인 체크)
    - 기본 정보: 나이대, 주 사용 손, 영어 입력 빈도, 평소 입력 방식 + 실험자가 고르는 장갑(여성용/남성용)
    - 연습: 맨손 준비 단계(노란 키 43개) → 키보드 X 문장 3개 → 키보드 Y 문장 3개
    - 조건 4개 (참가자 번호에 따라 순서가 정해짐), 조건마다: 장갑 끼기/벗기 안내 → 준비 단계 → 문장 8개 → 설문(NASA-TLX 6문항 + 불편도) → 사용성 설문(SUS 10문항) → 휴식
-   - 마무리: 선호도 → **결과** (인터뷰는 실험자가 이어서 진행)
+   - **키보드 비교(X vs Y):** 같은 손 상태(맨손 또는 장갑)로 X·Y를 둘 다 써 본 직후 바로 묻는다. 손 상태마다 1번씩, 총 2번 (v0.9.0, 파일럿에서 마지막에 물으면 기억이 안 난다는 문제로 변경)
+   - 마무리: **결과** (인터뷰는 실험자가 이어서 진행)
 4. 결과 화면에서 **이 참가자 기록 내보내기**로 백업하고 **다음 참가자 시작**.
+   - 내보낸 파일(`.jsonl`)은 아이폰·갤럭시 어디서 받아도 같은 형식이다. 예전 버전 아이폰에서 붙은 `.jsonl.ndjson`, 메신저를 거치며 `.txt`로 바뀐 파일도 "다른 기기 기록 합치기"·"재생"에서 그대로 불러올 수 있다(확장자가 아니라 내용으로 판별).
 
 중간에 앱이 꺼져도 시작 화면의 **이어서 하기**로 그 단계부터 다시 한다. 단, 끊긴 단계는 처음부터 다시 진행된다.
 
@@ -77,7 +79,7 @@ tests/             Node 내장 테스트 러너
 
 ## 로그 (JSON Lines)
 
-주요 이벤트: `session_start`, `participant_start`, `flow_step`, `flow_exit`(나가기), `typing_start`(문장 입력 시작, 재시작 구분용), `consent_confirmed`, `demographics`(나이대·주 사용 손·영어 입력 빈도·입력 방식·장갑 종류), `layout`(키 사각형 px), `calib_tap`, `model_fit`(선택 규칙 `policy`, 자동이었다면 고를 모델 `auto`, 두 모델의 LOO 정확도와 계수), `touch`(두 판정 결과 `keyBase`/`keyCal`, 같은 보정 데이터의 M0·M1 판정 `keyM0`/`keyM1`, 실제 반영 `keyShown`/`applied`, 의도 키 `intended`), `trial_end`, `survey`(TLX·불편도), `sus`(조건마다, `cond` 포함), `preference`, `participant_end`, `settings`.
+주요 이벤트: `session_start`, `participant_start`, `flow_step`, `flow_exit`(나가기), `typing_start`(문장 입력 시작, 재시작 구분용), `consent_confirmed`, `demographics`(나이대·주 사용 손·영어 입력 빈도·입력 방식·장갑 종류), `layout`(키 사각형 px), `calib_tap`, `model_fit`(선택 규칙 `policy`, 자동이었다면 고를 모델 `auto`, 두 모델의 LOO 정확도와 계수), `touch`(두 판정 결과 `keyBase`/`keyCal`, 같은 보정 데이터의 M0·M1 판정 `keyM0`/`keyM1`, 실제 반영 `keyShown`/`applied`, 의도 키 `intended`), `trial_end`, `survey`(TLX·불편도), `sus`(조건마다, `cond` 포함), `preference`(손 상태마다 1번: `hand`, `choice` X/same/Y, `keyboard`), `participant_end`, `settings`.
 좌표는 키보드 기준 CSS px(`x`, `y`)와 키 단위(`ux`, `uy`, 1 = 가로 키 간격)를 함께 저장한다. 지표는 분석 스크립트가 원본에서 다시 계산한다.
 
 ## 아직 안 된 것

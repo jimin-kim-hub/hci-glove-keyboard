@@ -52,7 +52,7 @@ export function createReplayScreen(ctx) {
     <p class="muted">폰에서 보정(43탭)을 하고 내보낸 기록(JSONL) 파일을 불러오세요.
       각 탭은 <b>그 탭을 뺀 나머지로 학습한 모델</b>(LOO)로 판정하므로 정답 누수가 없습니다.</p>
     <div class="row">
-      <label class="file-btn">JSONL 불러오기<input type="file" accept=".jsonl,.json,.txt" data-r="file" hidden></label>
+      <label class="file-btn">JSONL 불러오기<input type="file" data-r="file" hidden></label>
       <button data-r="useLocal">이 기기의 현재 로그 사용</button>
     </div>
     <select data-r="runs" hidden></select>

@@ -16,7 +16,7 @@ test('steps follow the Latin-square order with calib → 8 phrases → TLX → S
   assert.equal(steps.filter(s => s.type === 'rest').length, 3);
   assert.equal(steps[0].type, 'intro');
   assert.equal(steps[1].type, 'demo'); // background questions right after consent
-  assert.equal(steps.length, 32);
+  assert.equal(steps.length, 33);
   assert.equal(steps.at(-1).type, 'results');
 });
 
@@ -46,4 +46,20 @@ test('SUS scoring', () => {
 test('raw TLX is the mean of six items', () => {
   assert.equal(tlxRaw([0, 10, 20, 30, 40, 50]), 25);
   assert.equal(tlxRaw([0, 10, null, 30, 40, 50]), null);
+});
+
+test('X vs Y is asked per hand state right after both keyboards were used in it', () => {
+  for (const order of ['ABDC', 'BCAD', 'CDBA', 'DACB']) {
+    const steps = buildSteps(order);
+    const prefs = steps.map((s, i) => [s, i]).filter(([s]) => s.type === 'pref');
+    assert.equal(prefs.length, 2, order);
+    assert.deepEqual(prefs.map(([s]) => s.hand).sort(), ['bare', 'glove']);
+    for (const [p, i] of prefs) {
+      assert.equal(steps[i - 1].type, 'sus'); // straight after the 2nd condition's SUS
+      assert.equal(steps[i - 1].hand, p.hand);
+      assert.deepEqual(p.blocks.map(b => b.kbLabel).sort(), ['X', 'Y']);
+      const done = steps.slice(0, i).filter(s => s.type === 'typing' && s.phase === 'main' && s.hand === p.hand);
+      assert.equal(done.length, 2);
+    }
+  }
 });

@@ -102,7 +102,9 @@ export class Logger {
   export(pid = null) {
     const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const text = this.toJSONL(pid ? (e => e.pid === pid) : undefined);
-    this.download(`glovekb_${pid || 'ALL'}_${stamp}.jsonl`, text, 'application/x-ndjson');
+    // octet-stream: iOS Safari appended '.ndjson' to the name for application/x-ndjson; keep the .jsonl name as-is on iOS/Android
+    // (iOS가 파일명 뒤에 .ndjson을 붙이던 문제 방지)
+    this.download(`glovekb_${pid || 'ALL'}_${stamp}.jsonl`, text, 'application/octet-stream');
   }
 
   download(filename, text, type) {
@@ -127,11 +129,17 @@ export class Logger {
   }
 }
 
+// Accepts .jsonl / .ndjson / .txt / .json (array) alike; keeps only our log events (ev + sid + n).
+// (파일 확장자와 상관없이 내용으로 판별: 아이폰 .ndjson, 갤럭시 .txt/.jsonl 모두 허용)
 export function parseJSONL(text) {
+  const isEvent = o => o && typeof o === 'object' && typeof o.ev === 'string' && o.sid != null && o.n != null;
+  text = String(text).replace(/^\uFEFF/, '');
+  const t = text.trim();
+  if (t.startsWith('[')) { try { const a = JSON.parse(t); if (Array.isArray(a)) return a.filter(isEvent); } catch (e) { /* fall through */ } }
   const out = [];
   for (const line of text.split(/\r?\n/)) {
     if (!line.trim()) continue;
-    try { out.push(JSON.parse(line)); } catch (e) { /* skip malformed line */ }
+    try { const o = JSON.parse(line); if (isEvent(o)) out.push(o); } catch (e) { /* skip malformed line */ }
   }
   return out;
 }

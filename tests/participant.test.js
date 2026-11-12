@@ -54,3 +54,11 @@ test('restarts, surveys and SUS appear in the detail and the CSV', () => {
   assert.equal(row[cols.indexOf('english_freq')], '3');
   assert.equal(row[cols.indexOf('glove_type')], 'women');
 });
+
+test('per-hand preference events (v0.9) map to pref_glove / pref_bare', () => {
+  const d = participantDetail([
+    { ...base, ev: 'preference', hand: 'glove', choice: 'X', keyboard: 'calibrated' },
+    { ...base, ev: 'preference', hand: 'bare', choice: 'same', keyboard: 'same' },
+  ], 'P01');
+  assert.deepEqual(d.preference, { glove: 'calibrated', bare: 'same' });
+});
