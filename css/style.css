@@ -18,6 +18,7 @@
   --good: #0a9b5c; --good-weak: #e5f7ee;
   --bad: #f04452;  --bad-weak: #ffeeee;
   --amber: #ff9f0a; --amber-weak: #fff4e0; --amber-text: #8a5300;
+  --viz-x: #2a78d6; --viz-y: #eb6834; /* result charts: categorical slots 1·2, CVD-validated (결과 차트 색) */
   /* keyboard (iOS-like) */
   --kb-bg: #d1d4da; --key: #ffffff; --key-text: #000; --key-fn: #abb0bc; --key-shadow: #898a8d;
   /* shape + type (모양·글자) */
@@ -34,6 +35,7 @@
     --primary: #4c95ff; --primary-press: #3182f6; --primary-weak: #1d2a40; --on-primary: #ffffff;
     --good: #2ecc85; --good-weak: #15302a; --bad: #ff6b76; --bad-weak: #3a1f24;
     --amber: #ffb340; --amber-weak: #3b2e17; --amber-text: #ffcf86;
+    --viz-x: #3987e5; --viz-y: #d95926;
     --kb-bg: #2c2c31; --key: #6b6b70; --key-text: #fff; --key-fn: #46464b; --key-shadow: #111;
     --shadow: 0 2px 10px rgba(0, 0, 0, .3);
     color-scheme: dark;
@@ -334,3 +336,31 @@ body:not(.kb-on) #keyboard { display: none; }
 .key.target { background: var(--amber-weak); box-shadow: 0 0 0 3px var(--amber), 0 1px 0 var(--key-shadow); color: var(--key-text); z-index: 1; }
 .key.pressed { background: var(--key-fn); }
 .kb-overlay { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 2; }
+
+/* ---------- result charts (결과 화면 시각화) ---------- */
+.viz-hero { background: var(--surface); border-radius: var(--r-lg); padding: 16px 20px; margin: 12px 0; }
+.viz-hero .eyebrow { color: var(--text-3); display: block; }
+.viz-hero div { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.viz-X-text { color: var(--text); border-bottom: 4px solid var(--viz-x); }
+.viz-Y-text { color: var(--text); border-bottom: 4px solid var(--viz-y); }
+.viz-legend { display: flex; gap: 16px; font-size: 14px; color: var(--text-2); margin: 8px 2px; }
+.viz-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.viz-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.viz-legend i.viz-X { background: var(--viz-x); }
+.viz-legend i.viz-Y { background: var(--viz-y); }
+.viz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 380px) { .viz-grid { grid-template-columns: 1fr; } }
+.viz-card { background: var(--surface); border-radius: var(--r-md); padding: 12px 10px 4px; margin: 0; min-width: 0; }
+.viz-card figcaption { display: flex; flex-direction: column; padding: 0 4px; line-height: 1.3; }
+.viz-card figcaption b { font-size: 15px; color: var(--text); }
+.viz-card figcaption span { font-size: 12px; color: var(--text-3); }
+.viz-card svg { width: 100%; height: auto; display: block; overflow: visible; }
+.viz-bar.viz-X { fill: var(--viz-x); }
+.viz-bar.viz-Y { fill: var(--viz-y); }
+.viz-bar:hover { opacity: .85; }
+.viz-base { stroke: var(--line); stroke-width: 1; }
+.viz-val { font-size: 15px; font-weight: 600; fill: var(--text); text-anchor: middle; font-variant-numeric: tabular-nums; }
+.viz-val.muted { fill: var(--text-3); }
+.viz-axis { font-size: 14px; fill: var(--text-2); text-anchor: middle; }
+.viz-table { margin: 10px 0; }
+.viz-table summary { cursor: pointer; color: var(--text-2); font-size: 14px; padding: 6px 2px; }

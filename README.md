@@ -79,6 +79,10 @@ tests/             Node 내장 테스트 러너
 
 ## 로그 (JSON Lines)
 
+오류 지표 계산 (v0.11.0): 의도한 키는 **목표 문장과 실제 입력을 정렬(최소 편집 거리)** 해서 정한다. 장갑이 탭을 놓쳐 글자가 빠져도 뒤 글자가 전부 오류로 세지지 않는다. 빠진 글자 비율은 **누락률**(`omission_rate`)로 따로 센다. `touch` 이벤트의 `intended`는 실시간 커서 규칙 그대로이고, `trial_end`에 정렬 결과 `alignedIntended`(키 입력 순서대로)와 `live.omissions`가 기록된다.
+
+결과 화면 (v0.11.0): 장갑 오타율 한 줄 요약, 지표별 막대 그래프(오타율·속도·SUS·TLX, 맨손·장갑 × X·Y), 표 보기, 실험자용 누락률.
+
 보정 학습 규칙: 43탭을 모두 누르되, **스페이스 탭은 학습에서 제외**한다(넓은 키라 중심과의 거리가 조준 오차가 아님, v0.10.0). |d| > 1.5 키 간격인 탭도 제외.
 
 주요 이벤트: `session_start`, `participant_start`, `flow_step`, `flow_exit`(나가기), `typing_start`(문장 입력 시작, 재시작 구분용), `consent_confirmed`, `demographics`(나이대·주 사용 손·영어 입력 빈도·입력 방식·장갑 종류), `layout`(키 사각형 px), `calib_tap`, `model_fit`(선택 규칙 `policy`, 자동이었다면 고를 모델 `auto`, 두 모델의 LOO 정확도와 계수), `touch`(두 판정 결과 `keyBase`/`keyCal`, 같은 보정 데이터의 M0·M1 판정 `keyM0`/`keyM1`, 실제 반영 `keyShown`/`applied`, 의도 키 `intended`), `trial_end`, `survey`(TLX·불편도), `sus`(조건마다, `cond` 포함), `preference`(손 상태마다 1번: `hand`, `choice` X/same/Y, `keyboard`), `participant_end`, `settings`.

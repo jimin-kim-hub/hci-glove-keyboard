@@ -6,6 +6,7 @@ import { runCalibration } from './calibrun.js';
 import { runTyping } from './typerun.js';
 import { TLX_ITEMS, DISCOMFORT, SUS_ITEMS, DEMOGRAPHICS, susScore, tlxRaw } from './surveys.js';
 import { summarizeParticipants, nextParticipantId } from './aggregate.js';
+import { groupedBars, vizLegend } from './resultviz.js';
 
 const FLOW_KEY = 'glovekb.flow.v1'; // { pid: { step, done } }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -315,25 +316,55 @@ export function createFlowScreen(ctx) {
       const mine = ctx.logger.events.filter(e => e.pid === pid());
       const sum = summarizeParticipants(mine)[0];
       const sus = Object.fromEntries(mine.filter(e => e.ev === 'sus' && e.cond).map(e => [e.cond, e.score]));
+      const tlx = Object.fromEntries(mine.filter(e => e.ev === 'survey' && e.cond).map(e => [e.cond, e.tlxRaw]));
       const xIsCal = ctx.settings.xIs === 'calibrated';
-      const rows = ['X', 'Y'].flatMap(lbl => ['bare', 'glove'].map(hand => {
+      const condOf = (lbl, hand) => {
         const kb = (lbl === 'X') === xIsCal ? 'calibrated' : 'baseline';
-        const cond = Object.keys(CONDITIONS).find(c => CONDITIONS[c].keyboard === kb && CONDITIONS[c].hand === hand);
-        const c = sum?.conds[cond];
-        const acc = c?.shown ? `${((1 - c.shown.keyErrorRate) * 100).toFixed(1)}%` : '–';
-        const wpmTxt = c?.wpm != null ? c.wpm.toFixed(1) : '–';
-        return `<tr><td>키보드 ${lbl}</td><td>${handText(hand)}</td><td>${acc}</td><td>${wpmTxt}</td><td>${sus[cond] ?? '–'}</td></tr>`;
+        return Object.keys(CONDITIONS).find(c => CONDITIONS[c].keyboard === kb && CONDITIONS[c].hand === hand);
+      };
+      // Per metric: { bare: {X, Y}, glove: {X, Y} } (지표별 맨손·장갑 × X·Y 값)
+      const grid = f => Object.fromEntries(['bare', 'glove'].map(h => [h, Object.fromEntries(['X', 'Y'].map(l => [l, f(condOf(l, h))]))]));
+      const c = cond => sum?.conds[cond];
+      const errPct = grid(k => (c(k)?.shown ? c(k).shown.keyErrorRate * 100 : null));
+      const speed = grid(k => c(k)?.wpm ?? null);
+      const susV = grid(k => sus[k] ?? null);
+      const tlxV = grid(k => tlx[k] ?? null);
+      const omit = grid(k => (c(k)?.omissionRate != null ? c(k).omissionRate * 100 : null));
+      const rows = ['X', 'Y'].flatMap(l => ['bare', 'glove'].map(h => {
+        const v = (g, d) => (g[h][l] == null ? '–' : g[h][l].toFixed(d));
+        return `<tr><td>키보드 ${l}</td><td>${handText(h)}</td><td>${v(errPct, 1)}%</td><td>${v(speed, 1)}</td><td>${v(susV, 1)}</td><td>${v(tlxV, 1)}</td></tr>`;
       })).join('');
+      // Headline: glove typo rate X vs Y (장갑일 때 오타율 한 줄 요약)
+      const gx = errPct.glove.X, gy = errPct.glove.Y;
+      const headline = gx != null && gy != null
+        ? `<div class="viz-hero"><span class="eyebrow">장갑을 꼈을 때 오타율</span>
+            <div><b class="viz-X-text">X ${gx.toFixed(1)}%</b><span class="muted"> vs </span><b class="viz-Y-text">Y ${gy.toFixed(1)}%</b></div></div>`
+        : '';
       el.innerHTML = `<div class="status"><div class="hero">🙏</div><h1>참여해 주셔서<br>감사합니다!</h1>
         <p class="lead">${esc(ctx.participantLabel())} 님의 결과입니다.</p></div>
-        <table class="result">
-          <tr><th>키보드</th><th>손</th><th>정확도</th><th>속도 (WPM)</th><th>SUS</th></tr>${rows}
-        </table>
-        <p class="muted small">정확도 = 의도한 글자가 그대로 입력된 비율, WPM = 분당 단어 수(5글자 = 1단어), SUS = 사용성 점수(0–100). 참고용 수치입니다.</p>
+        ${headline}
+        ${vizLegend()}
+        <div class="viz-grid">
+          ${groupedBars(errPct, { title: '오타율', note: '낮을수록 좋음 · %', unit: '%', digits: 1 })}
+          ${groupedBars(speed, { title: '입력 속도', note: '높을수록 좋음 · 분당 단어(WPM)', digits: 1 })}
+          ${groupedBars(susV, { title: '사용성 (SUS)', note: '높을수록 좋음 · 0–100', digits: 0, max: 115 })}
+          ${groupedBars(tlxV, { title: '작업 부담 (TLX)', note: '낮을수록 좋음 · 0–100', digits: 0, max: 115 })}
+        </div>
+        <details class="viz-table"><summary>표로 보기</summary>
+          <table class="result">
+            <tr><th>키보드</th><th>손</th><th>오타율</th><th>WPM</th><th>SUS</th><th>TLX</th></tr>${rows}
+          </table></details>
+        <p class="muted small">오타율 = 누르려던 글자와 다른 키가 입력된 비율(목표 문장과 입력을 정렬해 계산), WPM = 분당 단어 수(5글자 = 1단어), SUS = 사용성 점수, TLX = 작업 부담 점수. 참고용 수치입니다.</p>
         <div class="card accent">키보드 <b>${xIsCal ? 'X' : 'Y'}</b>는 장갑 상황에 맞춰 터치 위치를 보정하는 <b>새 키보드</b>였고,
           키보드 <b>${xIsCal ? 'Y' : 'X'}</b>는 보정 없는 <b>기본 키보드</b>였습니다.</div>
         <h2 class="exp-only">실험자</h2>
         <p class="muted small exp-only">브라우저 저장소는 지워질 수 있으니 참가자마다 바로 내보내세요.</p>
+        <div class="exp-only card">
+          <b>장갑이 놓친 탭 (누락률)</b><br>
+          장갑 X ${omit.glove.X == null ? '–' : omit.glove.X.toFixed(1)}% · 장갑 Y ${omit.glove.Y == null ? '–' : omit.glove.Y.toFixed(1)}% ·
+          맨손 X ${omit.bare.X == null ? '–' : omit.bare.X.toFixed(1)}% · 맨손 Y ${omit.bare.Y == null ? '–' : omit.bare.Y.toFixed(1)}%
+          <div class="muted small">누락은 보정으로 고칠 수 없어 오타율과 따로 봅니다. 장갑 누락이 5%를 넘으면 장갑 핏을 확인하세요.</div>
+        </div>
         <div class="exp-only stack end">
           <button class="primary big" id="export">이 참가자 기록 내보내기 (JSONL)</button>
           <button class="big" id="nextP">다음 참가자 시작</button>

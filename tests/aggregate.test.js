@@ -17,7 +17,7 @@ test('summary is per participant × condition, main phase only, P00 excluded', (
     touch('P01', 'B', 0, 'w', 'e'), touch('P01', 'B', 1, 'w', 'w'),
     touch('P01', 'B', 2, 'w', 'w', { phase: 'practice' }),
     touch('P01', 'B', 3, 'w', 'shift'),
-    { ev: 'trial_end', sid: 's-P01', n: 4, pid: 'P01', cond: 'B', phase: 'main', live: { wpm: 20 } },
+    { ev: 'trial_end', sid: 's-P01', n: 4, pid: 'P01', cond: 'B', phase: 'main', phrase: 'ww', live: { wpm: 20 } },
     { ev: 'model_fit', sid: 's-P01', n: 5, pid: 'P01', cond: 'D', model: 'M0' },
     touch('P02', 'A', 0, 'a', 'a'),
     touch('P00', 'A', 0, 'a', 's'),
@@ -50,4 +50,17 @@ test('a restarted typing step replaces the earlier partial attempt', () => {
   assert.equal(c.trials, 1);
   assert.equal(c.shown.keystrokes, 1);
   assert.equal(c.shown.keyErrorRate, 0);
+});
+
+test('a lost tap (glove) counts as one omission, not as errors on every later key', () => {
+  // "do not": the n tap never registered → typed "do ot"
+  const typedKeys = ['d', 'o', 'space', 'o', 't'];
+  const events = [
+    { ev: 'typing_start', sid: 's', n: 0, pid: 'P01', cond: 'D', phase: 'main' },
+    ...typedKeys.map((k, i) => touch('P01', 'D', i + 1, null, k)),
+    { ev: 'trial_end', sid: 's', n: 9, pid: 'P01', cond: 'D', phase: 'main', phrase: 'do not', live: { wpm: 20 } },
+  ];
+  const d = summarizeParticipants(events)[0].conds.D;
+  assert.equal(d.shown.keyErrorRate, 0);
+  assert.ok(Math.abs(d.omissionRate - 1 / 6) < 1e-9);
 });

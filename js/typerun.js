@@ -1,7 +1,7 @@
 // typerun.js — transcription runner: phrase → type → Next (따라 쓰기 실행기, 계획 PDF B6)
 // No right/wrong feedback while typing (A4). Metrics here are for logging/live check only.
 import { keyIdToChar } from './geometry.js';
-import { intendedKeyAt, classifyKeystroke, summarizeKeystrokes, wpm, msdErrorRate } from './metrics.js';
+import { intendedKeyAt, classifyKeystroke, summarizeKeystrokes, wpm, msdErrorRate, alignTrial } from './metrics.js';
 
 const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
@@ -29,9 +29,18 @@ export function runTyping(ctx, host, { phrases, keyboard, model, alt = null, log
     if (!typed.length) return; // Next on empty input is ignored (B6)
     const end = performance.now();
     const secs = (end - tStart) / 1000;
-    const s = summarizeKeystrokes(keys);
-    const live = { wpm: +wpm(typed, secs).toFixed(2), msd: +msdErrorRate(phrases[idx], typed).toFixed(2), ...s };
-    ctx.logger.log('trial_end', { ...logFields, trial: idx, phrase: phrases[idx], typed, start: tStart, end, live });
+    // Error rates use alignment-based intended keys (v0.11.0); per-touch `intended` in the log stays the cursor rule
+    // (오류율은 정렬 기반 의도 키로 계산, 터치 로그의 intended는 실시간 커서 규칙 그대로)
+    const a = alignTrial(phrases[idx], keys);
+    const s = summarizeKeystrokes(a.strokes);
+    const live = {
+      wpm: +wpm(typed, secs).toFixed(2), msd: +msdErrorRate(phrases[idx], typed).toFixed(2), ...s,
+      intendedBy: 'align', omissions: a.omissions, insertions: a.insertions, omissionRate: +(a.omissions / a.chars).toFixed(4),
+    };
+    ctx.logger.log('trial_end', {
+      ...logFields, trial: idx, phrase: phrases[idx], typed, start: tStart, end, live,
+      alignedIntended: a.strokes.map(k => k.intended), // one per keystroke (shift excluded), same order as the touches
+    });
     results.push({ keys, ...live });
     idx++; typed = ''; keys = []; tStart = null;
     if (idx >= phrases.length) onDone(results); else render();

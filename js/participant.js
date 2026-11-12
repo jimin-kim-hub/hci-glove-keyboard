@@ -1,6 +1,6 @@
 // participant.js — one participant's results from raw events, and a CSV of them (참가자별 결과, 순수 함수)
 // Live check only — the analysis scripts recompute from raw logs.
-import { CONDITIONS } from './config.js';
+import { CONDITIONS, CALIB } from './config.js';
 import { KEY_BY_ID } from './geometry.js';
 import { summarizeParticipants } from './aggregate.js';
 
@@ -12,8 +12,11 @@ const median = (xs) => {
 
 // Typical miss of the calibration taps: touch − key center, in key units (보정 탭의 어긋남)
 function calibOffset(taps) {
-  const ds = taps.filter(t => KEY_BY_ID[t.target] && t.ux != null)
-    .map(t => ({ dx: t.ux - KEY_BY_ID[t.target].cx, dy: t.uy - KEY_BY_ID[t.target].cy }));
+  // Same taps the model learns from: no space, no outliers (모델 학습과 같은 기준: 스페이스·이상치 제외)
+  const skip = new Set(CALIB.excludeFromFit ?? []);
+  const ds = taps.filter(t => KEY_BY_ID[t.target] && t.ux != null && !skip.has(t.target))
+    .map(t => ({ dx: t.ux - KEY_BY_ID[t.target].cx, dy: t.uy - KEY_BY_ID[t.target].cy }))
+    .filter(d => Math.hypot(d.dx, d.dy) <= CALIB.outlierPitch);
   if (!ds.length) return null;
   return {
     n: ds.length,
@@ -71,7 +74,7 @@ export function participantDetail(events, pid) {
 }
 
 const CSV_COLUMNS = [
-  'pid', 'cond', 'keyboard', 'hand', 'trials', 'restarts', 'accuracy', 'key_error_rate', 'neighbor_error_rate', 'wpm', 'backspaces',
+  'pid', 'cond', 'keyboard', 'hand', 'trials', 'restarts', 'accuracy', 'key_error_rate', 'neighbor_error_rate', 'omission_rate', 'wpm', 'backspaces',
   'shadow_base_neighbor_error_rate', 'shadow_cal_neighbor_error_rate', 'calib_model', 'calib_baseline_acc', 'calib_loo_acc', 'calib_seconds',
   'calib_offset_dx', 'calib_offset_dy', 'tlx_raw', 'discomfort', 'sus', 'pref_glove', 'pref_bare', 'age', 'main_hand', 'english_freq', 'typing_style', 'glove_type', 'includes_simulation',
 ];
@@ -80,7 +83,7 @@ const num = (v, d = 4) => (v == null ? '' : +v.toFixed(d));
 export function detailToCsv(d) {
   const rows = d.conds.map(c => [
     d.pid, c.cond, c.keyboard, c.hand, c.trials, c.restarts,
-    c.shown ? num(1 - c.shown.keyErrorRate) : '', num(c.shown?.keyErrorRate), num(c.shown?.neighborErrorRate), num(c.wpm, 2), c.shown?.backspaces ?? '',
+    c.shown ? num(1 - c.shown.keyErrorRate) : '', num(c.shown?.keyErrorRate), num(c.shown?.neighborErrorRate), num(c.omissionRate), num(c.wpm, 2), c.shown?.backspaces ?? '',
     num(c.base?.neighborErrorRate), num(c.cal?.neighborErrorRate), c.fit?.model ?? '', num(c.fit?.baselineAcc), num(c.fit?.looAcc), num(c.fit?.seconds, 1),
     num(c.offset?.dx, 3), num(c.offset?.dy, 3), num(c.tlx, 1), c.discomfort ?? '', c.sus ?? d.sus[c.keyboard] ?? '',
     d.preference?.glove ?? '', d.preference?.bare ?? '',

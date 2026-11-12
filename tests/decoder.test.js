@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { KEYS, CALIB, SIM_PRESETS } from '../js/config.js';
 import { KEY_BY_ID, rectHit, hitOrNearest, NEIGHBORS, isNeighbor, charToKeyId } from '../js/geometry.js';
 import { decodeBaseline, decodeCalibrated, fitCalibration, fitM0, fitM1, residuals, offsetAt, correctPoint } from '../js/decoder.js';
-import { msd, msdErrorRate, wpm, intendedKeyAt, classifyKeystroke, summarizeKeystrokes } from '../js/metrics.js';
+import { msd, msdErrorRate, wpm, intendedKeyAt, classifyKeystroke, summarizeKeystrokes, alignTrial } from '../js/metrics.js';
 import { simulateCalibration, simulateTouch, mulberry32 } from '../js/simulate.js';
 
 const center = id => ({ x: KEY_BY_ID[id].cx, y: KEY_BY_ID[id].cy });
@@ -191,4 +191,18 @@ test('space taps are collected but left out of model fitting (pilot 11/12)', () 
   assert.equal(report.nExcluded, 8);
   assert.equal(report.nUsed, 26);
   assert.ok(Math.abs(model.ox) < 1e-9 && Math.abs(model.oy) < 1e-9);
+});
+
+test('alignTrial: omissions, substitutions and erased keystrokes get the right intended key (정렬 기반 의도 키)', () => {
+  const k = ids => ids.map(decoded => ({ decoded }));
+  // lost tap: "so ot" for "do not" → s is a substitution of d, n is omitted, the rest are correct
+  let a = alignTrial('do not', k(['s', 'o', 'space', 'o', 't']));
+  assert.deepEqual(a.strokes.map(s => s.intended), ['d', 'o', 'space', 'o', 't']);
+  assert.equal(a.omissions, 1);
+  assert.equal(a.substitutions, 1);
+  // erased error: "w" typed for "e", backspace, then "e" → the erased w was intended as e
+  a = alignTrial('he', k(['h', 'w', 'backspace', 'e']));
+  assert.deepEqual(a.strokes.map(s => s.intended), ['h', 'e', null, 'e']);
+  assert.equal(a.omissions, 0);
+  assert.equal(summarizeKeystrokes(a.strokes).keyErrorRate, 1 / 3);
 });
