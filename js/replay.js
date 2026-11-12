@@ -81,7 +81,7 @@ export function createReplayScreen(ctx) {
           <div class="cell"><div class="cap">기본 판정 정확도</div><div class="key-big">${pct(ev.baseAcc)}</div><div class="muted">이웃 키 오류 ${ev.baseNbr}회</div></div>
           <div class="cell cal"><div class="cap">보정 판정 정확도 (LOO)</div><div class="key-big">${pct(ev.calAcc)}</div><div class="muted">이웃 키 오류 ${ev.calNbr}회</div></div>
         </div>
-        <div class="muted">사용 탭 ${ev.rows.length}개 (이상치 ${ev.report.nOutliers}개 제외) · 선택 모델 ${ev.model.type}${ev.model.type === 'M1' ? ` λ=${ev.model.lambda}` : ''} · ${ev.report.reason}</div>
+        <div class="muted">사용 탭 ${ev.rows.length}개 (스페이스 ${ev.report.nExcluded}개·이상치 ${ev.report.nOutliers}개 제외) · 선택 모델 ${ev.model.type}${ev.model.type === 'M1' ? ` λ=${ev.model.lambda}` : ''} · ${ev.report.reason}</div>
         <div class="muted small">주의: 탭 43개 한 번 분량이라 우연 변동이 큽니다. 효과의 근거가 아니라 작동 확인용입니다.</div>
       </div>
       <div class="legend">

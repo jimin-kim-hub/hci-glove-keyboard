@@ -182,3 +182,13 @@ test('model policy fixes M0 or M1 for everyone and always returns both models (ë
   assert.equal(few.model.type, 'M0');
   assert.equal(few.alt.M1, null);
 });
+
+test('space taps are collected but left out of model fitting (pilot 11/12)', () => {
+  // letters: no offset. space: tapped far right of its center (+1.3 key) â€” must not shift the model
+  const letters = 'qwertyuiopasdfghjklzxcvbnm'.split('').map(id => ({ target: id, x: KEY_BY_ID[id].cx, y: KEY_BY_ID[id].cy }));
+  const spaces = Array.from({ length: 8 }, () => ({ target: 'space', x: KEY_BY_ID.space.cx + 1.3, y: KEY_BY_ID.space.cy }));
+  const { model, report } = fitCalibration([...letters, ...spaces], 'M0');
+  assert.equal(report.nExcluded, 8);
+  assert.equal(report.nUsed, 26);
+  assert.ok(Math.abs(model.ox) < 1e-9 && Math.abs(model.oy) < 1e-9);
+});

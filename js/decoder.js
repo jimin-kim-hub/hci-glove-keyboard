@@ -124,9 +124,11 @@ export const MODEL_POLICIES = ['auto', 'M0', 'M1'];
 export function fitCalibration(taps, policy = 'auto') {
   if (!MODEL_POLICIES.includes(policy)) policy = 'auto';
   const all = residuals(taps);
-  const rs = removeOutliers(all);
+  const excluded = new Set(CALIB.excludeFromFit ?? []);
+  const fitRs = all.filter(r => !excluded.has(r.target)); // space taps are collected but not fitted (스페이스 탭은 수집만, 학습 제외)
+  const rs = removeOutliers(fitRs);
   const report = {
-    nTotal: all.length, nUsed: rs.length, nOutliers: all.length - rs.length, policy,
+    nTotal: all.length, nExcluded: all.length - fitRs.length, nUsed: rs.length, nOutliers: fitRs.length - rs.length, policy,
     baseline: looBaseline(rs), m0: null, m1: [], m1Lambda: null, auto: null, chosen: null, reason: '',
   };
   const pct = v => (v * 100).toFixed(1) + '%';

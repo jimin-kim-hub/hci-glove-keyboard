@@ -2,7 +2,7 @@
 // All geometry is in "key units" (u): 1 u = horizontal key pitch (키 간격).
 // Rendering and decoding both read from here, so they can never disagree.
 
-export const APP_VERSION = '0.9.0';
+export const APP_VERSION = '0.10.0';
 
 // --- Key geometry (키 기하) -------------------------------------------------
 export const GEOM = {
@@ -49,6 +49,9 @@ export const EDGE_MARGIN_PX = 14;
 export const CALIB = {
   phrase: 'the quick brown fox jumps over the lazy dog', // 43 taps incl. spaces
   outlierPitch: 1.5,     // drop taps with |d| > 1.5 pitch when fitting (계획 PDF B4)
+  // Wide keys: distance from the key center is not aiming error, so they are left out of model fitting (pilot 11/12)
+  // (스페이스는 넓어서 어디를 눌러도 정답 → 중심과의 거리는 조준 오차가 아님. 보정 학습에서 제외)
+  excludeFromFit: ['space'],
   ignorePitch: 1.0,      // during collection, ignore taps >= 1 pitch from any key (B5)
   minTapsForM1: 15,      // fewer usable taps -> fall back to M0
   lambdas: [0.1, 1, 10], // ridge candidates for M1, chosen by LOO

@@ -33,7 +33,7 @@ export function runCalibration(ctx, host, { logFields, onDone }) {
     const { model, alt, report } = fitCalibration(taps, ctx.settings.modelPolicy);
     ctx.kb.setTarget(null);
     ctx.logger.log('model_fit', {
-      ...logFields, model: model.type, policy: report.policy, auto: report.auto, n: report.nUsed, nTotal: report.nTotal,
+      ...logFields, model: model.type, policy: report.policy, auto: report.auto, n: report.nUsed, nTotal: report.nTotal, nExcluded: report.nExcluded, excludedKeys: CALIB.excludeFromFit,
       loo_acc: report.looAcc, loo_acc_m0: report.m0.acc, loo_acc_m1: report.m1.find(r => r.lambda === report.m1Lambda)?.acc ?? null,
       baseline_acc: report.baseline.acc, reason: report.reason, params: model, params_m0: alt.M0, params_m1: alt.M1, durationS, sim,
     });
