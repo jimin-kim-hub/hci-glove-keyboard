@@ -1,6 +1,6 @@
 // flow.js — the participant-facing session: nickname → guided steps → results
 // (참가자 진행 화면: 별명 입력 → 안내에 따라 순서대로 → 마지막에 결과)
-import { COND_INDEX, CONDITIONS } from './config.js';
+import { COND_INDEX, CONDITIONS, EXPERIMENT_SETTINGS } from './config.js';
 import { buildSteps } from './steps.js';
 import { runCalibration } from './calibrun.js';
 import { runTyping } from './typerun.js';
@@ -59,7 +59,14 @@ export function createFlowScreen(ctx) {
     const pids = [...new Set([...Object.keys(ctx.participants), ...ctx.logger.events.map(e => e.pid)])].filter(p => p && p !== 'P00');
     const nextPid = nextParticipantId(pids);
     const unfinished = Object.entries(progress).filter(([p, s]) => p !== 'P00' && !s.done);
-    el.innerHTML = `
+    // Settings check: every participant runs with the same experiment settings (실험 설정 검사)
+    const LABEL = { mode: ['입력 모드', { touch: '실기기 터치', sim: '시뮬레이션' }], xIs: ['키보드 X', { calibrated: '보정 키보드', baseline: '기본 키보드' }], modelPolicy: ['보정 모델', { auto: '자동', M0: 'M0 고정', M1: 'M1 고정' }] };
+    const wrong = Object.keys(EXPERIMENT_SETTINGS).filter(k => ctx.settings[k] !== EXPERIMENT_SETTINGS[k]);
+    const name = (k, v) => LABEL[k][1][v] ?? v;
+    const warn = wrong.length ? `<div class="card warn" id="settingsWarn"><b>실험용 설정이 아닙니다 — 이대로는 시작할 수 없습니다</b>
+        <ul>${wrong.map(k => `<li>${LABEL[k][0]}: 지금 <b>${name(k, ctx.settings[k])}</b> → 실험용 <b>${name(k, EXPERIMENT_SETTINGS[k])}</b></li>`).join('')}</ul>
+        <button class="primary" id="fixSettings">실험용 설정으로 되돌리기</button></div>` : '';
+    el.innerHTML = `${warn}
       <div class="hero sm">🧤</div>
       <p class="eyebrow">HCI 팀 프로젝트 실험</p>
       <h1>장갑 키보드 실험에<br>오신 것을 환영해요</h1>
@@ -75,8 +82,17 @@ export function createFlowScreen(ctx) {
       </details>
       ${unfinished.length ? `<h2>이어서 하기</h2><div class="resume">${unfinished.map(([p, s]) =>
         `<button data-pid="${esc(p)}">${esc(ctx.participantLabel(p))}<span>${s.step + 1}단계부터</span></button>`).join('')}</div>` : ''}
-      ${cta('시작하기', { id: 'go' })}`;
+      ${cta('시작하기', { id: 'go', disabled: wrong.length > 0 })}`;
+    el.querySelector('#fixSettings')?.addEventListener('click', () => {
+      Object.assign(ctx.settings, EXPERIMENT_SETTINGS);
+      ctx.saveSettings();
+      ctx.logger.log('settings', { pid: 'P00', changed: 'reset-to-experiment', mode: ctx.settings.mode, xIs: ctx.settings.xIs, modelPolicy: ctx.settings.modelPolicy });
+      ctx.applySettings?.();
+      renderWelcome();
+    });
+    const blocked = () => { if (wrong.length) { el.querySelector('#settingsWarn').scrollIntoView({ block: 'center' }); return true; } return false; };
     el.querySelector('#go').onclick = () => {
+      if (blocked()) return;
       const alias = el.querySelector('#alias').value.trim();
       if (!alias) { el.querySelector('#alias').focus(); return; }
       const n = parseInt(el.querySelector('#num').value, 10);
@@ -85,7 +101,7 @@ export function createFlowScreen(ctx) {
       if ((pids.includes(p) || progress[p]) && !confirm(`${p}은(는) 이미 기록이 있습니다. 같은 번호로 계속할까요?`)) return;
       begin(p, alias);
     };
-    el.querySelectorAll('.resume [data-pid]').forEach(b => b.onclick = () => begin(b.dataset.pid));
+    el.querySelectorAll('.resume [data-pid]').forEach(b => b.onclick = () => { if (!blocked()) begin(b.dataset.pid); });
   }
 
   function begin(p, alias) {
@@ -355,15 +371,15 @@ export function createFlowScreen(ctx) {
             <tr><th>키보드</th><th>손</th><th>오타율</th><th>WPM</th><th>SUS</th><th>TLX</th></tr>${rows}
           </table></details>
         <p class="muted small">오타율 = 누르려던 글자와 다른 키가 입력된 비율(목표 문장과 입력을 정렬해 계산), WPM = 분당 단어 수(5글자 = 1단어), SUS = 사용성 점수, TLX = 작업 부담 점수. 참고용 수치입니다.</p>
-        <div class="card accent">키보드 <b>${xIsCal ? 'X' : 'Y'}</b>는 장갑 상황에 맞춰 터치 위치를 보정하는 <b>새 키보드</b>였고,
-          키보드 <b>${xIsCal ? 'Y' : 'X'}</b>는 보정 없는 <b>기본 키보드</b>였습니다.</div>
+        <div class="card accent">어느 키보드가 새로 만든 키보드인지는 <b>모든 참가자의 실험이 끝난 뒤</b> 알려 드립니다.
+          다른 분들의 결과에 영향이 가지 않도록, 실험 내용은 주변에 이야기하지 말아 주세요.</div>
         <h2 class="exp-only">실험자</h2>
         <p class="muted small exp-only">브라우저 저장소는 지워질 수 있으니 참가자마다 바로 내보내세요.</p>
         <div class="exp-only card">
           <b>장갑이 놓친 탭 (누락률)</b><br>
           장갑 X ${omit.glove.X == null ? '–' : omit.glove.X.toFixed(1)}% · 장갑 Y ${omit.glove.Y == null ? '–' : omit.glove.Y.toFixed(1)}% ·
           맨손 X ${omit.bare.X == null ? '–' : omit.bare.X.toFixed(1)}% · 맨손 Y ${omit.bare.Y == null ? '–' : omit.bare.Y.toFixed(1)}%
-          <div class="muted small">누락은 보정으로 고칠 수 없어 오타율과 따로 봅니다. 장갑 누락이 5%를 넘으면 장갑 핏을 확인하세요.</div>
+          <div class="muted small">누락은 오타율과 따로 봅니다. 장갑 누락이 5%를 넘으면 장갑 핏을 확인하세요.</div>
         </div>
         <div class="exp-only stack end">
           <button class="primary big" id="export">이 참가자 기록 내보내기 (JSONL)</button>

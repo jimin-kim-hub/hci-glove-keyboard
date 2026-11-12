@@ -160,6 +160,7 @@ function updateChrome() {
   document.getElementById('badge-sim').hidden = settings.mode !== 'sim';
   document.body.classList.toggle('sim-mode', settings.mode === 'sim');
 }
+ctx.applySettings = updateChrome;
 
 // Keyboard area only: no scroll/zoom/long-press there; the rest of the page scrolls and zooms normally
 document.addEventListener('touchmove', e => { if (e.target.closest('#keyboard')) e.preventDefault(); }, { passive: false });
