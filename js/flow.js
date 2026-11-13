@@ -60,7 +60,7 @@ export function createFlowScreen(ctx) {
     const nextPid = nextParticipantId(pids);
     const unfinished = Object.entries(progress).filter(([p, s]) => p !== 'P00' && !s.done);
     // Settings check: every participant runs with the same experiment settings (실험 설정 검사)
-    const LABEL = { mode: ['입력 모드', { touch: '실기기 터치', sim: '시뮬레이션' }], xIs: ['키보드 X', { calibrated: '보정 키보드', baseline: '기본 키보드' }], modelPolicy: ['보정 모델', { auto: '자동', M0: 'M0 고정', M1: 'M1 고정' }] };
+    const LABEL = { mode: ['입력 모드', { touch: '실기기 터치', sim: '시뮬레이션' }], modelPolicy: ['보정 모델', { auto: '자동', M0: 'M0 고정', M1: 'M1 고정' }] };
     const wrong = Object.keys(EXPERIMENT_SETTINGS).filter(k => ctx.settings[k] !== EXPERIMENT_SETTINGS[k]);
     const name = (k, v) => LABEL[k][1][v] ?? v;
     const warn = wrong.length ? `<div class="card warn" id="settingsWarn"><b>실험용 설정이 아닙니다 — 이대로는 시작할 수 없습니다</b>
@@ -86,7 +86,7 @@ export function createFlowScreen(ctx) {
     el.querySelector('#fixSettings')?.addEventListener('click', () => {
       Object.assign(ctx.settings, EXPERIMENT_SETTINGS);
       ctx.saveSettings();
-      ctx.logger.log('settings', { pid: 'P00', changed: 'reset-to-experiment', mode: ctx.settings.mode, xIs: ctx.settings.xIs, modelPolicy: ctx.settings.modelPolicy });
+      ctx.logger.log('settings', { pid: 'P00', changed: 'reset-to-experiment', mode: ctx.settings.mode, xIs: ctx.xIs(), modelPolicy: ctx.settings.modelPolicy });
       ctx.applySettings?.();
       renderWelcome();
     });
@@ -139,7 +139,7 @@ export function createFlowScreen(ctx) {
     await loadPhrases();
     if (seq !== renderSeq) return;
     const order = ctx.latinOrder() || 'ABCD';
-    steps = buildSteps(order, ctx.settings.xIs);
+    steps = buildSteps(order, ctx.xIs());
     const step = steps[s.step];
     runner = null;
     window.scrollTo(0, 0);
@@ -318,7 +318,7 @@ export function createFlowScreen(ctx) {
       const nx = el.querySelector('#next');
       bindLikert(el.querySelector('[data-likert]'), v => { choice = v; nx.disabled = false; });
       nx.onclick = () => {
-        const kb = choice === 'same' ? 'same' : (choice === 'X') === (ctx.settings.xIs === 'calibrated') ? 'calibrated' : 'baseline';
+        const kb = choice === 'same' ? 'same' : (choice === 'X') === (ctx.xIs() === 'calibrated') ? 'calibrated' : 'baseline';
         ctx.logger.log('preference', { pid: pid(), hand: step.hand, choice, keyboard: kb, blocks: (step.blocks ?? []).map(b => b.cond) });
         advance();
       };
@@ -333,7 +333,7 @@ export function createFlowScreen(ctx) {
       const sum = summarizeParticipants(mine)[0];
       const sus = Object.fromEntries(mine.filter(e => e.ev === 'sus' && e.cond).map(e => [e.cond, e.score]));
       const tlx = Object.fromEntries(mine.filter(e => e.ev === 'survey' && e.cond).map(e => [e.cond, e.tlxRaw]));
-      const xIsCal = ctx.settings.xIs === 'calibrated';
+      const xIsCal = ctx.xIs() === 'calibrated';
       const condOf = (lbl, hand) => {
         const kb = (lbl === 'X') === xIsCal ? 'calibrated' : 'baseline';
         return Object.keys(CONDITIONS).find(c => CONDITIONS[c].keyboard === kb && CONDITIONS[c].hand === hand);
@@ -409,7 +409,7 @@ export function createFlowScreen(ctx) {
     status() {
       const s = cur();
       if (!s || pid() === 'P00') return null;
-      const st = buildSteps(ctx.latinOrder() || 'ABCD', ctx.settings.xIs);
+      const st = buildSteps(ctx.latinOrder() || 'ABCD', ctx.xIs());
       return { step: s.step, total: st.length, title: st[s.step].title, done: s.done };
     },
   };

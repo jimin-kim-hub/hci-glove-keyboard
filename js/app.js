@@ -62,14 +62,20 @@ const ctx = {
   },
 
   // The alias stays on this device and is never written to the log (익명화)
+  // Which keyboard is labeled X for this participant (참가자별 X/Y 지정)
+  xIs(pid = settings.pid) { return participants[pid]?.xIs ?? settings.xIs; },
+
   startParticipant(pid, alias) {
     const order = ctx.latinOrder(pid);
-    if (!participants[pid]) participants[pid] = { alias: alias || '', created: new Date().toISOString(), order };
+    // X/Y assignment is fixed per participant at start, so a later settings change cannot flip labels mid-session
+    // (X/Y 지정은 참가자 시작 시점 값으로 고정 — 도중에 설정을 바꿔도 그 참가자에게는 적용 안 됨)
+    if (!participants[pid]) participants[pid] = { alias: alias || '', created: new Date().toISOString(), order, xIs: settings.xIs };
     else if (alias) participants[pid].alias = alias;
+    if (!participants[pid].xIs) participants[pid].xIs = settings.xIs;
     ctx.saveParticipants();
     settings.pid = pid;
     ctx.saveSettings();
-    logger.log('participant_start', { pid, order, group: order ? (ctx.pnum(pid) - 1) % 4 + 1 : null, mode: settings.mode, xIs: settings.xIs, modelPolicy: settings.modelPolicy, app: APP_VERSION });
+    logger.log('participant_start', { pid, order, group: order ? (ctx.pnum(pid) - 1) % 4 + 1 : null, mode: settings.mode, xIs: participants[pid].xIs, modelPolicy: settings.modelPolicy, app: APP_VERSION });
   },
 
   // Decode one touch with both decoders; only `shown` reaches the screen (섀도 로깅)

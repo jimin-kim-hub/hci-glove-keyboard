@@ -2,7 +2,7 @@
 // All geometry is in "key units" (u): 1 u = horizontal key pitch (키 간격).
 // Rendering and decoding both read from here, so they can never disagree.
 
-export const APP_VERSION = '0.12.0';
+export const APP_VERSION = '0.12.1';
 
 // --- Key geometry (키 기하) -------------------------------------------------
 export const GEOM = {
@@ -65,7 +65,9 @@ export const DEFAULT_MODEL_POLICY = 'auto';
 
 // Settings every participant must run with; the start screen refuses to begin otherwise (11/13: 분석 영향 최소화)
 // (모든 참가자가 같은 설정으로 진행해야 함 — 다르면 시작 화면에서 막음)
-export const EXPERIMENT_SETTINGS = Object.freeze({ mode: 'touch', xIs: 'calibrated', modelPolicy: DEFAULT_MODEL_POLICY });
+// X/Y assignment (xIs) is left free by user decision 11/13 — it is logged per participant and analysis uses the keyboard, not the label
+// (X/Y 지정은 검사하지 않음 — 참가자마다 로그에 남고 분석은 라벨이 아닌 키보드 기준)
+export const EXPERIMENT_SETTINGS = Object.freeze({ mode: 'touch', modelPolicy: DEFAULT_MODEL_POLICY });
 
 export const NEIGHBOR_MAX_DIST = 0.5 * GEOM.keyW;
 
