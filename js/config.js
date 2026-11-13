@@ -2,7 +2,7 @@
 // All geometry is in "key units" (u): 1 u = horizontal key pitch (키 간격).
 // Rendering and decoding both read from here, so they can never disagree.
 
-export const APP_VERSION = '0.12.1';
+export const APP_VERSION = '0.13.0';
 
 // --- Key geometry (키 기하) -------------------------------------------------
 export const GEOM = {
@@ -61,7 +61,9 @@ export const CALIB = {
 // Neighbor rule: min distance between key rectangles <= 0.5 key width (A7)
 // Model policy (모델 고정): tutor feedback 11/9 — pick ONE model for everyone after the pilot.
 // 'auto' keeps the per-participant LOO choice until then. Set to 'M0' or 'M1' at the 11/21 freeze.
-export const DEFAULT_MODEL_POLICY = 'auto';
+// Fixed to M1 on 2026-11-13 after 3 team pilots (pre-set rule: larger glove neighbor-error reduction vs baseline:
+// baseline 139 → M0 127 → M1 69). M1 still falls back to M0 with < 15 usable taps. (파일럿 3명 결과로 M1 고정)
+export const DEFAULT_MODEL_POLICY = 'M1';
 
 // Settings every participant must run with; the start screen refuses to begin otherwise (11/13: 분석 영향 최소화)
 // (모든 참가자가 같은 설정으로 진행해야 함 — 다르면 시작 화면에서 막음)
