@@ -289,7 +289,7 @@ export function createFlowScreen(ctx) {
 
     sus(step) {
       el.innerHTML = `<p class="eyebrow">키보드 <span class="kb-tag">${step.kbLabel}</span> · ${handText(step.hand)} · 사용성 설문</p><h1>방금 쓴 키보드는 어땠나요?</h1>
-        <p class="lead">방금 ${handText(step.hand)} 상태로 쓴 경험만 떠올려 답해 주세요.<br><b>1</b> 전혀 그렇지 않다 · <b>5</b> 매우 그렇다</p>
+        <p class="lead">방금 이 키보드로 문장을 직접 입력해 본 경험을 떠올리며 답해 주세요.<br><b>1</b> 전혀 그렇지 않다 · <b>5</b> 매우 그렇다</p>
         ${SUS_ITEMS.map((q, j) => `<div class="q"><div class="qtitle">${j + 1} / 10</div><div class="qtext">${q}</div>
           <div class="likert" data-likert="${j}">${[1, 2, 3, 4, 5].map(v => `<button data-v="${v}">${v}</button>`).join('')}</div>
           <div class="anchors"><span>전혀 그렇지 않다</span><span>매우 그렇다</span></div></div>`).join('')}
