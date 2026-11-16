@@ -1,8 +1,16 @@
 // calibrun.js — guided-tap calibration runner, reusable by the flow and the demo
 // (가이드 탭 보정 실행기, 계획 PDF B5). Renders into `host`, returns { onTap }.
 import { CALIB } from './config.js';
-import { charToKeyId, nearestKey } from './geometry.js';
+import { charToKeyId, KEY_BY_ID, pointRectDist } from './geometry.js';
 import { fitCalibration } from './decoder.js';
+
+// v1.1: a calibration tap counts only if it lands within CALIB.ignorePitch of the highlighted key.
+// Otherwise it is ignored and the same key stays highlighted, so a missed glove tap or typing ahead
+// cannot shift every later label by one key (P01 v1.0 문제: 목표 키에서 먼 탭은 무시하고 재대기, 계획 B5).
+export function calibTapAccepted(p, targetId) {
+  const k = KEY_BY_ID[targetId];
+  return !!k && pointRectDist(p, k) < CALIB.ignorePitch;
+}
 
 export function runCalibration(ctx, host, { logFields, onDone }) {
   const chars = [...CALIB.phrase];
@@ -10,7 +18,7 @@ export function runCalibration(ctx, host, { logFields, onDone }) {
   const taps = [];
   host.innerHTML = `
     <h2>노란 키를 차례대로 누르세요</h2>
-    <p class="lead">맞게 눌렀는지는 신경 쓰지 말고, 평소처럼 누르면 됩니다.</p>
+    <p class="lead">노란 키를 하나씩 보며 평소처럼 누르세요. 노란 키에서 멀리 떨어진 곳을 누르면 다음으로 넘어가지 않습니다.</p>
     <div class="panel">
       <div class="pangram"></div>
       <div class="progress"><div></div></div>
@@ -45,8 +53,9 @@ export function runCalibration(ctx, host, { logFields, onDone }) {
       if (i >= chars.length) return;
       const target = charToKeyId(chars[i]);
       const base = { ...logFields, i, target, sim: input.sim, ux: +input.touch.x.toFixed(3), uy: +input.touch.y.toFixed(3) };
-      if (nearestKey(input.touch).dist >= CALIB.ignorePitch) { // too far from any key: ignore and wait (B5)
-        ctx.logger.log('calib_ignored', base);
+      if (!calibTapAccepted(input.touch, target)) { // too far from the highlighted key: ignore and wait (B5, v1.1)
+        ctx.logger.log('calib_ignored', { ...base, reason: 'far-from-target' });
+        count.textContent = `${i} / ${chars.length} · 노란 키를 눌러 주세요`;
         return;
       }
       if (startT === null) startT = performance.now();

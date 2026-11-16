@@ -6,3 +6,9 @@ docs/
 .DS_Store
 __pycache__/
 *.pyc
+
+# Participant data stays local (참가자 데이터는 로컬 전용)
+실험 결과 데이터/
+*.jsonl
+*.ndjson
+*_summary*.csv
