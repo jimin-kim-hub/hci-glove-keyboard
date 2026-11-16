@@ -247,7 +247,7 @@ export function createFlowScreen(ctx) {
       el.innerHTML = `<p class="eyebrow">키보드 ${step.kbLabel} · ${handText(step.hand)}</p><h1>방금 한 과제는 어땠나요?</h1>
         <p class="lead">막대를 움직여 답해 주세요. 7개 문항에 모두 답하면 다음으로 넘어갑니다.</p>
         ${TLX_ITEMS.map((it, j) => `
-          <div class="q"><div class="qtitle">${j + 1}. ${it.name}</div><div class="qtext">${it.q}</div>
+          <div class="q"><div class="qtitle">${j + 1}. ${it.name}</div><div class="qtext">${it.q}</div>${it.note ? `<div class="qnote">${it.note}</div>` : ''}
             <input type="range" min="0" max="100" step="5" value="50" class="untouched" data-tlx="${j}">
             <div class="anchors"><span>${it.lo}</span><span class="val" data-val="${j}">선택 안 함</span><span>${it.hi}</span></div></div>`).join('')}
         <div class="q"><div class="qtitle">7. 불편도</div><div class="qtext">${DISCOMFORT.q}</div>

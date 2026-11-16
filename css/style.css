@@ -228,6 +228,8 @@ input[type=range].untouched::-webkit-slider-thumb { box-shadow: 0 1px 4px rgba(0
 .q { background: var(--surface); border-radius: var(--r-lg); padding: 18px 18px 16px; margin: 0 0 12px; }
 .qtitle { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 2px; }
 .qtext { font-size: 16px; font-weight: 600; color: var(--text); margin: 0 0 12px; line-height: 1.5; }
+.qtext:has(+ .qnote) { margin-bottom: 4px; }
+.qnote { font-size: 14px; font-weight: 600; color: var(--primary); margin: 0 0 12px; }
 .anchors { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-3); gap: 8px; }
 .anchors .val { font-weight: 700; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .q input[type=range]:not(.untouched) + .anchors .val { color: var(--primary); font-size: 15px; }

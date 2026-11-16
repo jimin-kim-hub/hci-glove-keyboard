@@ -7,7 +7,7 @@ export const TLX_ITEMS = [
   { key: 'mental', name: '정신적 요구', q: '과제가 정신적으로 얼마나 힘들었나요?', lo: '매우 낮음', hi: '매우 높음' },
   { key: 'physical', name: '신체적 요구', q: '과제가 신체적으로 얼마나 힘들었나요?', lo: '매우 낮음', hi: '매우 높음' },
   { key: 'temporal', name: '시간적 압박', q: '얼마나 서둘러야 한다고 느꼈나요?', lo: '매우 낮음', hi: '매우 높음' },
-  { key: 'performance', name: '수행', q: '과제를 얼마나 잘 해냈다고 느끼나요?', lo: '완벽함', hi: '실패' },
+  { key: 'performance', name: '수행', q: '과제를 얼마나 잘 해냈다고 느끼나요?', lo: '완벽함', hi: '실패', note: '이 문항만 왼쪽이 잘한 쪽입니다.' }, // v1.3: reversed-direction note (방향 안내)
   { key: 'effort', name: '노력', q: '그만큼 해내기 위해 얼마나 애써야 했나요?', lo: '매우 낮음', hi: '매우 높음' },
   { key: 'frustration', name: '좌절', q: '얼마나 짜증·불안·스트레스를 느꼈나요?', lo: '매우 낮음', hi: '매우 높음' },
 ];
