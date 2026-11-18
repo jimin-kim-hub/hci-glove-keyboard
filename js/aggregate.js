@@ -82,8 +82,12 @@ export function summarizeParticipants(events) {
 }
 
 // Next free participant number, e.g. P01, P02 ... from known ids
-export function nextParticipantId(pids) {
+export function nextParticipantId(pids, group = null) {
   const nums = pids.map(p => parseInt(String(p).replace(/\D/g, ''), 10)).filter(n => n > 0);
-  const n = nums.length ? Math.max(...nums) + 1 : 1;
+  let n;
+  if (group >= 1 && group <= 4) { // smallest unused number in this order group (그룹 고정 배정)
+    const used = new Set(nums);
+    for (n = group; used.has(n) && n + 4 <= 99; n += 4);
+  } else n = nums.length ? Math.max(...nums) + 1 : 1;
   return `P${String(n).padStart(2, '0')}`;
 }

@@ -37,6 +37,11 @@ test('summary is per participant × condition, main phase only, P00 excluded', (
 test('next participant id', () => {
   assert.equal(nextParticipantId([]), 'P01');
   assert.equal(nextParticipantId(['P01', 'P03', 'P00']), 'P04');
+  // fixed order group (v1.4): group g uses g, g+4, g+8 …
+  assert.equal(nextParticipantId([], 2), 'P02');
+  assert.equal(nextParticipantId(['P01', 'P02'], 2), 'P06');
+  assert.equal(nextParticipantId(['P02', 'P06'], 2), 'P10');
+  assert.equal(nextParticipantId([], 4), 'P04');
 });
 
 test('a restarted typing step replaces the earlier partial attempt', () => {

@@ -1,6 +1,6 @@
 // flow.js — the participant-facing session: nickname → guided steps → results
 // (참가자 진행 화면: 별명 입력 → 안내에 따라 순서대로 → 마지막에 결과)
-import { COND_INDEX, CONDITIONS, EXPERIMENT_SETTINGS } from './config.js';
+import { COND_INDEX, CONDITIONS, EXPERIMENT_SETTINGS, ASSIGN_GROUP } from './config.js';
 import { buildSteps } from './steps.js';
 import { runCalibration } from './calibrun.js';
 import { runTyping } from './typerun.js';
@@ -57,7 +57,7 @@ export function createFlowScreen(ctx) {
     setKeyboard(false);
     setStepbar(null);
     const pids = [...new Set([...Object.keys(ctx.participants), ...ctx.logger.events.map(e => e.pid)])].filter(p => p && p !== 'P00');
-    const nextPid = nextParticipantId(pids);
+    const nextPid = nextParticipantId(pids, ASSIGN_GROUP);
     const unfinished = Object.entries(progress).filter(([p, s]) => p !== 'P00' && !s.done);
     // Settings check: every participant runs with the same experiment settings (실험 설정 검사)
     const LABEL = { mode: ['입력 모드', { touch: '실기기 터치', sim: '시뮬레이션' }], modelPolicy: ['보정 모델', { auto: '자동', M0: 'M0 고정', M1: 'M1 고정' }] };
@@ -76,7 +76,7 @@ export function createFlowScreen(ctx) {
         <small>실명은 쓰지 마세요. 별명은 이 기기 화면에만 표시되고, 기록에는 참가자 번호만 남습니다.</small>
       </label>
       <details class="exp-only">
-        <summary>실험자: 참가자 번호 <b>${nextPid}</b> 자동 배정 (바꾸려면 열기)</summary>
+        <summary>실험자: 참가자 번호 <b>${nextPid}</b> · 순서 그룹 ${(ctx.pnum(nextPid) - 1) % 4 + 1} (${ctx.latinOrder(nextPid).split('').join('→')}) 자동 배정 (바꾸려면 열기)</summary>
         <label class="field">참가자 번호 (1–99, 조건 순서·문장 세트를 정함)
           <input id="num" type="number" inputmode="numeric" min="1" max="99" value="${ctx.pnum(nextPid)}"></label>
       </details>
