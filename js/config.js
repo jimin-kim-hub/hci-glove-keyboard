@@ -2,7 +2,7 @@
 // All geometry is in "key units" (u): 1 u = horizontal key pitch (키 간격).
 // Rendering and decoding both read from here, so they can never disagree.
 
-export const APP_VERSION = '1.4.0';
+export const APP_VERSION = '1.5.0';
 
 // --- Key geometry (키 기하) -------------------------------------------------
 export const GEOM = {
@@ -87,7 +87,7 @@ export const LATIN_SQUARE = ['ABDC', 'BCAD', 'CDBA', 'DACB'];
 // every participant (Safari also clears storage), so automatic numbering would always give P01 = group 1.
 // The team changes this every 3 participants (2026-11-18): group g uses numbers g, g+4, g+8 (e.g. 2 → P02, P06, P10),
 // which also keeps the phrase-set mapping S[(k+p) mod 4] tied to the group. null = old behaviour (max + 1).
-export const ASSIGN_GROUP = 2;
+export const ASSIGN_GROUP = 3;
 
 // --- Synthetic glove offset (합성 장갑 오프셋) — assumption, NOT real data -------
 // Units: key widths. dx = mx + slope * (x - 5)/5 + N(0, sd); dy = my + N(0, sd)
