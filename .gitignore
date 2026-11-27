@@ -21,3 +21,7 @@ data/raw/
 제출용/
 _participant_codes_LOCAL_ONLY.csv
 .ipynb_checkpoints/
+
+# Handoff folder for teammates (팀원 전달용, 로컬 전용)
+팀원전달_발표준비/
+팀원전달_발표준비.zip
