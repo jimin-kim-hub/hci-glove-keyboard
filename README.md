@@ -108,14 +108,9 @@ SUS 안내 (v0.13.1): 문항 10개와 채점은 표준 SUS 그대로. 두 키보
 
 ## 분석 (`analysis/`)
 
-참가자 원본 로그에서 지표를 다시 계산하고 2×2 피험자 내 통계 분석을 한다. 자세한 방법과 각 통계 기법을 쓴 이유는 [analysis/README.md](analysis/README.md)에 정리돼 있다. 참가자 데이터는 이 저장소에 없다.
+익명화 원자료에서 지표 계산부터 통계 검정, 그래프까지 파이썬으로 실행한다. 중심은 노트북 `analysis/analysis.ipynb`다. 방법과 각 통계 기법을 쓴 이유는 [analysis/README.md](analysis/README.md)에 정리돼 있다.
 
-```bash
-node analysis/extract.mjs "실험 결과 데이터"   # 원본 로그 → analysis_out/per_condition.csv
-python3 -I analysis/stats.py                    # 통계 → analysis_out/report.md, fig1–3.png
-```
-
-주피터에서 보려면 `analysis/analysis.ipynb`를 연다. 실행 결과에는 참가자 데이터가 들어가므로, 커밋하기 전에 반드시 출력을 지운다.
+참가자 데이터는 이 저장소에 없다. 익명화 원자료를 `data/raw/`에 두고 노트북을 실행한다. 실행 결과에는 참가자 데이터가 들어가므로, 커밋하기 전에 반드시 출력을 지운다.
 
 ## 아직 안 된 것
 

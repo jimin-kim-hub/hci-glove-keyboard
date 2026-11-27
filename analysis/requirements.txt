@@ -1,0 +1,6 @@
+numpy
+scipy
+pandas
+matplotlib
+statsmodels>=0.14.5
+jupyter
