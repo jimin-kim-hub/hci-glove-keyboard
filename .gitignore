@@ -12,3 +12,6 @@ __pycache__/
 *.jsonl
 *.ndjson
 *_summary*.csv
+
+# Analysis outputs contain participant data (분석 결과도 참가자 데이터)
+analysis_out/

@@ -106,17 +106,27 @@ SUS 안내 (v0.13.1): 문항 10개와 채점은 표준 SUS 그대로. 두 키보
 주요 이벤트: `session_start`, `participant_start`, `flow_step`, `flow_exit`(나가기), `typing_start`(문장 입력 시작, 재시작 구분용), `consent_confirmed`, `demographics`(나이대·주 사용 손·영어 입력 빈도·입력 방식·장갑 종류), `layout`(키 사각형 px), `calib_tap`, `model_fit`(선택 규칙 `policy`, 자동이었다면 고를 모델 `auto`, 두 모델의 LOO 정확도와 계수), `touch`(두 판정 결과 `keyBase`/`keyCal`, 같은 보정 데이터의 M0·M1 판정 `keyM0`/`keyM1`, 실제 반영 `keyShown`/`applied`, 의도 키 `intended`), `trial_end`, `survey`(TLX·불편도), `sus`(조건마다, `cond` 포함), `preference`(손 상태마다 1번: `hand`, `choice` X/same/Y, `keyboard`), `participant_end`, `settings`.
 좌표는 키보드 기준 CSS px(`x`, `y`)와 키 단위(`ux`, `uy`, 1 = 가로 키 간격)를 함께 저장한다. 지표는 분석 스크립트가 원본에서 다시 계산한다.
 
+## 분석 (`analysis/`)
+
+참가자 원본 로그에서 지표를 다시 계산하고 2×2 피험자 내 통계 분석을 한다. 자세한 방법과 각 통계 기법을 쓴 이유는 [analysis/README.md](analysis/README.md)에 정리돼 있다. 참가자 데이터는 이 저장소에 없다.
+
+```bash
+node analysis/extract.mjs "실험 결과 데이터"   # 원본 로그 → analysis_out/per_condition.csv
+python3 -I analysis/stats.py                    # 통계 → analysis_out/report.md, fig1–3.png
+```
+
+주피터에서 보려면 `analysis/analysis.ipynb`를 연다. 실행 결과에는 참가자 데이터가 들어가므로, 커밋하기 전에 반드시 출력을 지운다.
+
 ## 아직 안 된 것
 
 - 설문 문항의 한국어는 팀 번역 초안이다. 검증된 한국어판 NASA-TLX·SUS와 대조해야 한다.
 - 실제 폰·장갑에서의 확인 (touch radius/force 값, 가장자리 제스처, 지연)
 - 문장 세트는 공식 MacKenzie & Soukoreff `phrases2.txt`(https://www.yorku.ca/mack/PhraseSets.zip)에서 `node tools/make_sets.mjs phrases2.txt > data/phrases.json`으로 만든다. 4세트의 k번째 문장은 글자 수가 같고 난이도(단어 길이·글자 희귀도·키 이동 거리)가 비슷하다. 난이도 지표는 팀이 정한 근사치다.
 - 보정 모델 기본값은 자동 선택(`DEFAULT_MODEL_POLICY = 'auto'`)이다. 파일럿 뒤 M0 또는 M1 하나로 정해 `js/config.js`에서 바꾸고 사양을 동결한다.
-- Python 분석 스크립트(`analysis/`)
 
 ## 저장소 범위
 
-공개 저장소라 웹앱·테스트·README만 올린다. 팀 내부 문서(실험 계획 PDF, 결정 기록, 수업 자료)는 `.gitignore`로 제외했다.
+공개 저장소라 웹앱·테스트·README·도구(`tools/`)·분석 코드(`analysis/`)만 올린다. 참가자 데이터와 분석 결과(`analysis_out/`)는 올리지 않는다. 팀 내부 문서(실험 계획 PDF, 결정 기록, 수업 자료)는 `.gitignore`로 제외했다.
 
 ## 참고 문헌
 
