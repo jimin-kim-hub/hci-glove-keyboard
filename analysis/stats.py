@@ -26,6 +26,8 @@ import pandas as pd
 from scipy import stats
 
 CONDS = ["A", "B", "C", "D"]
+# 표에 보일 조건 이름 (A–D가 무엇인지 바로 알 수 있게)
+COND_LABEL = {"A": "A 기본·맨손", "B": "B 기본·장갑", "C": "C 보정·맨손", "D": "D 보정·장갑"}
 EFFECTS = ["키보드 (보정 − 기본)", "손 상태 (장갑 − 맨손)", "상호작용 (장갑 이득 − 맨손 이득)"]
 
 
@@ -47,7 +49,7 @@ def describe(per_condition, metrics):
     for col, label, scale in metrics:
         W = wide(per_condition, col) * scale
         for c in CONDS:
-            rows.append({"지표": label, "조건": c, "평균": W[c].mean(), "표준편차": W[c].std(ddof=1), "중앙값": W[c].median()})
+            rows.append({"지표": label, "조건": COND_LABEL[c], "평균": W[c].mean(), "표준편차": W[c].std(ddof=1), "중앙값": W[c].median()})
     return pd.DataFrame(rows).pivot_table(index="지표", columns="조건", values=["평균", "표준편차", "중앙값"], sort=False).round(2)
 
 
@@ -285,7 +287,7 @@ def shadow_comparison(per_condition):
             p = stats.wilcoxon(k, b).pvalue
         except ValueError:
             p = 1.0
-        rows.append({"조건": c, "기본 판정 %": b.mean() * 100, "보정 판정 %": k.mean() * 100,
+        rows.append({"조건": COND_LABEL[c], "기본 판정 %": b.mean() * 100, "보정 판정 %": k.mean() * 100,
                      "M0 판정 %": sub["shadow_m0_neighbor_error_rate"].mean() * 100,
                      "M1 판정 %": sub["shadow_m1_neighbor_error_rate"].mean() * 100,
                      "보정이 낮은 사람": f"{int((k < b).sum())}/{len(sub)}", "Wilcoxon p (보정 vs 기본)": p})
