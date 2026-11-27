@@ -112,12 +112,14 @@ SUS 안내 (v0.13.1): 문항 10개와 채점은 표준 SUS 그대로. 두 키보
 
 참가자 데이터는 이 저장소에 없다. 익명화 원자료를 `data/raw/`에 두고 노트북을 실행한다. 실행 결과에는 참가자 데이터가 들어가므로, 커밋하기 전에 반드시 출력을 지운다.
 
-## 아직 안 된 것
+## 상태와 한계 (2026-11-27)
 
-- 설문 문항의 한국어는 팀 번역 초안이다. 검증된 한국어판 NASA-TLX·SUS와 대조해야 한다.
-- 실제 폰·장갑에서의 확인 (touch radius/force 값, 가장자리 제스처, 지연)
-- 문장 세트는 공식 MacKenzie & Soukoreff `phrases2.txt`(https://www.yorku.ca/mack/PhraseSets.zip)에서 `node tools/make_sets.mjs phrases2.txt > data/phrases.json`으로 만든다. 4세트의 k번째 문장은 글자 수가 같고 난이도(단어 길이·글자 희귀도·키 이동 거리)가 비슷하다. 난이도 지표는 팀이 정한 근사치다.
-- 보정 모델 기본값은 자동 선택(`DEFAULT_MODEL_POLICY = 'auto'`)이다. 파일럿 뒤 M0 또는 M1 하나로 정해 `js/config.js`에서 바꾸고 사양을 동결한다.
+- 본 실험 12명과 분석을 마쳤다. 참가자 데이터는 이 저장소에 없다.
+- 설문 문항의 한국어는 팀 번역이다. 검증된 한국어판 NASA-TLX·SUS가 아니다.
+- 문장 세트는 공식 MacKenzie & Soukoreff `phrases2.txt`(https://www.yorku.ca/mack/PhraseSets.zip)에서 `node tools/make_sets.mjs phrases2.txt > data/phrases.json`으로 만든다.
+  - 4세트의 k번째 문장은 글자 수가 같고 난이도(단어 길이·글자 희귀도·키 이동 거리)가 비슷하다.
+  - 난이도 지표는 팀이 정한 근사치다.
+- 보정 모델은 M1으로 고정했다(`DEFAULT_MODEL_POLICY = 'M1'`, 팀 파일럿 결과).
 
 ## 저장소 범위
 
